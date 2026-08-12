@@ -1,0 +1,39 @@
+# Every optional template at once: two watched namespaces with enrichment, a file
+# checkpoint store on a persistent volume, a ServiceMonitor and an extra object.
+config:
+  source:
+    watches:
+      - namespace: team-a
+      - namespace: team-b
+    enrichment:
+      resources:
+        - name: pods
+        - name: nodes
+          clusterScoped: true
+  checkpoint:
+    store:
+      type: file
+      path: /var/lib/kem-agent/checkpoint.json
+  sinks:
+    stdout:
+      type: stdout
+  pipelines:
+    events:
+      sinks:
+        - stdout
+persistence:
+  enabled: true
+serviceMonitor:
+  enabled: true
+podLabels:
+  tier: observability
+env:
+  - name: TOKEN
+    value: example
+extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: '{{ include "kem-agent.fullname" . }}-extra'
+    data:
+      release: '{{ .Release.Name }}'

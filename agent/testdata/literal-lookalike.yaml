@@ -1,0 +1,16 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  console:
+    type: stdout
+pipelines:
+  owned:
+    filters:
+      - "event.note.contains('regardingObject')"
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: cp

@@ -1,0 +1,23 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  first:
+    type: fake
+    endpoint: collector:4317
+    metrics:
+      - kem_events_warnings
+  second:
+    type: fake
+    endpoint: collector:4318
+    metrics:
+      - kem_events_warnings
+pipelines:
+  all:
+    sinks:
+      - first
+      - second
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

@@ -1,0 +1,25 @@
+## Binaries
+dist/
+# A file named after a binary is ignored at any depth,
+# and the negation keeps the directories of the same name.
+agent
+!agent/
+schemagen
+!schemagen/
+
+## Test & coverage artifacts
+*.test
+*.out
+coverage.txt
+coverage.html
+
+## Editor / IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+## OS
+.DS_Store
+Thumbs.db

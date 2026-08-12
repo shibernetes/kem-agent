@@ -1,0 +1,15 @@
+# Patterns left out of the packaged chart.
+.DS_Store
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+# Values for the CI lint runs.
+ci/
+# The template helm-docs renders README.md from.
+README.md.gotmpl

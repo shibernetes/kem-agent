@@ -1,0 +1,15 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  collector:
+    type: otel
+    compression: gzip
+pipelines:
+  all:
+    sinks:
+      - collector
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

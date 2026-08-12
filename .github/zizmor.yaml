@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zizmorcore/zizmor/main/support/zizmor.schema.json
+rules:
+  # The CI workflow produces nothing, its snapshot job neither signs
+  # nor publishes, and the release workflow builds without a cache.
+  cache-poisoning:
+    ignore:
+      - ci.yaml
+  # Environment secrets need a paid plan while the repository is private.
+  # TODO(will): Once it is public, the App's private key moves to an environment
+  # limited to the default branch, and this ignore can be removed.
+  secrets-outside-env:
+    ignore:
+      - renovate.yaml
+  # actionlint does not accept the $/ form of a reusable workflow call.
+  self-repository:
+    ignore:
+      - release.yaml

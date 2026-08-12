@@ -1,0 +1,79 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.description" . }}
+
+## Install
+
+The chart is published to ghcr.io as an OCI artifact, at the same version as
+the agent image it deploys.
+
+```bash
+helm install kem-agent oci://ghcr.io/shibernetes/charts/kem-agent \
+  --version <version> \
+  --namespace kem-agent --create-namespace \
+  --values values.yaml
+```
+
+The chart renders nothing until `config` declares at least one pipeline. The
+smallest working values write every event of the release namespace to stdout:
+
+```yaml
+config:
+  sinks:
+    console:
+      type: stdout
+  pipelines:
+    events:
+      sinks:
+        - console
+```
+
+## Configuration
+
+`config` holds the agent configuration, rendered into a ConfigMap mounted in
+the pod. It is passed through as written, apart from three values the chart
+fills in:
+
+- an empty `source.watches` watches the release namespace
+- a ConfigMap checkpoint store with no `name` uses `<fullname>-checkpoint`
+- `source.enrichment.resources` entries are objects with a `name` and a
+  `clusterScoped` field, but only the name is used by the agent
+
+A configuration change restarts the pod through a `checksum/config` pod
+annotation. With `config.service.hot_reload` enabled, the annotation is left
+out, so filter changes apply in place and other changes need a rollout restart.
+
+## RBAC
+
+The chart grants what the configuration needs, from the watched namespaces:
+
+| Watches | Events and namespaced enrichment resources |
+|---|---|
+| a single namespace | Role and RoleBinding in that namespace |
+| two or more namespaces | ClusterRole, and a RoleBinding in each namespace |
+| all namespaces (`namespace: ""`) | ClusterRole and ClusterRoleBinding |
+
+Cluster-scoped enrichment resources take their own ClusterRole and
+ClusterRoleBinding, and a ConfigMap checkpoint store takes a Role in its
+namespace. Set `rbac.create` to `false` to manage RBAC yourself.
+
+## Checkpoint storage
+
+The default ConfigMap store needs no volume. A `file` store needs a volume at
+`config.checkpoint.store.path`: set `persistence.enabled` and point the path
+inside `persistence.mountPath`. The claim is kept when the release is
+uninstalled.
+
+## Verify the signature
+
+The chart is signed with cosign by the release workflow:
+
+```bash
+cosign verify ghcr.io/shibernetes/charts/kem-agent:<version> \
+  --certificate-identity-regexp '^https://github\.com/shibernetes/kem-agent/\.github/workflows/release\.yaml@refs/tags/v' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+{{ template "chart.requirementsSection" . }}
+
+{{ template "chart.valuesSection" . }}

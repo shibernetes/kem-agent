@@ -1,0 +1,14 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  out:
+    type: fake
+pipelines:
+  all:
+    sinks:
+      - out
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

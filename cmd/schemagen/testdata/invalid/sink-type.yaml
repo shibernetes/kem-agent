@@ -1,0 +1,16 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  queue:
+    type: kafka
+    brokers:
+      - broker:9092
+pipelines:
+  all:
+    sinks:
+      - queue
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

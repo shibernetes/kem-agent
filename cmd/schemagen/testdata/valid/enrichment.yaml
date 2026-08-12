@@ -1,0 +1,26 @@
+source:
+  watches:
+    - namespace: team-a
+  enrichment:
+    resources:
+      - pods
+      - deployments.apps
+    sync_timeout: 2m
+    labels:
+      enabled: true
+      keys:
+        - app
+        - team
+    annotations:
+      enabled: false
+sinks:
+  out:
+    type: stdout
+pipelines:
+  all:
+    sinks:
+      - out
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

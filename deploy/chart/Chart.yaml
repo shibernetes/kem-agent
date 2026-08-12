@@ -1,0 +1,32 @@
+apiVersion: v2
+name: kem-agent
+description: Kubernetes Events collection and forwarding agent
+type: application
+# Both versions set from the release tag by the release workflow.
+version: 0.0.0
+appVersion: 0.0.0
+kubeVersion: ">=1.27.0-0"
+home: https://github.com/shibernetes/kem-agent
+sources:
+  - https://github.com/shibernetes/kem-agent
+maintainers:
+  - name: William Poussier
+    email: william.poussier@gmail.com
+keywords:
+  - kubernetes
+  - events
+  - observability
+annotations:
+  artifacthub.io/category: monitoring-logging
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
+    - name: support
+      url: https://github.com/shibernetes/kem-agent/issues
+  # Set from the release tag by the release workflow, like the versions.
+  artifacthub.io/images: |
+    - name: kem-agent
+      image: ghcr.io/shibernetes/kem-agent:0.0.0
+      platforms:
+        - linux/amd64
+        - linux/arm64
+  artifacthub.io/prerelease: "false"

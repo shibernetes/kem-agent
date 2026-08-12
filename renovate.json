@@ -1,0 +1,161 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:best-practices",
+        ":semanticCommitTypeAll(chore)",
+        ":prHourlyLimitNone",
+        ":disableDependencyDashboard",
+        "customManagers:githubActionsVersions",
+        ":enablePreCommit"
+    ],
+    "semanticCommits": "enabled",
+    "commitMessagePrefix": "chore(renovate):",
+    "enabledManagers": [
+        "gomod",
+        "github-actions",
+        "dockerfile",
+        "custom.regex",
+        "pre-commit"
+    ],
+    "prConcurrentLimit": 5,
+    "schedule": [
+        "* 6-9 * * 1"
+    ],
+    "minimumReleaseAge": "7 days",
+    "postUpdateOptions": [
+        "gomodTidy",
+        "gomodUpdateImportPaths"
+    ],
+    "customManagers": [
+        {
+            "description": "The node image of the e2e KinD cluster, which sets its Kubernetes version and is pinned by tag and digest.",
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/(^|/)\\.kind\\.yaml$/"
+            ],
+            "matchStrings": [
+                "image: (?<depName>kindest/node):(?<currentValue>v[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]{64})"
+            ],
+            "datasourceTemplate": "docker"
+        }
+    ],
+    "vulnerabilityAlerts": {
+        "description": "An alert re-enables the concerned module, since indirect Go modules are otherwise never updated and a fix to one would be skipped.",
+        "enabled": true
+    },
+    "packageRules": [
+        {
+            "description": "The chore(renovate) prefix is meant for the pull requests Renovate opens about itself, such as a config migration, so every dependency update clears it and uses the chore(deps) prefix.",
+            "matchFileNames": [
+                "**/*"
+            ],
+            "commitMessagePrefix": ""
+        },
+        {
+            "description": "Go module updates are grouped together, in a single pull request per week.",
+            "matchManagers": [
+                "gomod"
+            ],
+            "matchDepTypes": [
+                "require"
+            ],
+            "groupName": "go modules"
+        },
+        {
+            "description": "The Kubernetes modules are upgraded together and pinned by the minor version, which can be raised by editing allowedVersions when the agent needs to move to a newer Kubernetes release.",
+            "extends": [
+                "monorepo:kubernetes"
+            ],
+            "groupName": "kubernetes packages",
+            "allowedVersions": "/^v?0\\.37\\./"
+        },
+        {
+            "description": "A KinD node image is built for one kind release, so the KinD version in the e2e workflow and the node image tag in .kind.yaml are updated together.",
+            "matchDepNames": [
+                "kubernetes-sigs/kind",
+                "kindest/node"
+            ],
+            "groupName": "kind"
+        },
+        {
+            "description": "The gitleaks pre-commit hook and the gitleaks version the CI workflow installs are updated together.",
+            "matchDepNames": [
+                "gitleaks/gitleaks"
+            ],
+            "groupName": "gitleaks"
+        },
+        {
+            "description": "The Renovate config validator hook and the Renovate version in the workflow are updated together.",
+            "matchDepNames": [
+                "renovatebot/pre-commit-hooks",
+                "ghcr.io/renovatebot/renovate"
+            ],
+            "groupName": "renovate"
+        },
+        {
+            "description": "The toolchain directive and the Go builder image are bumped together, since the image refuses to build a module using a newer toolchain than its own. A Go patch release carries security and critical fixes only, so the group skips the minimum release age.",
+            "matchDepNames": [
+                "go",
+                "golang"
+            ],
+            "groupName": "go toolchain",
+            "minimumReleaseAge": null
+        },
+        {
+            "description": "Distroless images publish no release timestamp, so a minimum release age would hold their digest updates for ever.",
+            "matchDatasources": [
+                "docker"
+            ],
+            "matchPackageNames": [
+                "gcr.io/distroless/**"
+            ],
+            "minimumReleaseAge": null
+        },
+        {
+            "description": "Renovate's image registry publishes no release timestamp, so its version is looked up from the GitHub releases.",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "ghcr.io/renovatebot/renovate"
+            ],
+            "overrideDatasource": "github-releases",
+            "overridePackageName": "renovatebot/renovate",
+            "pinDigests": false
+        },
+        {
+            "matchManagers": [
+                "github-actions",
+                "custom.regex",
+                "pre-commit"
+            ],
+            "matchDepNames": [
+                "golangci/golangci-lint",
+                "ghcr.io/renovatebot/renovate",
+                "goreleaser/goreleaser",
+                "sigstore/cosign",
+                "rhysd/actionlint",
+                "github.com/wasilibs/go-shellcheck/cmd/shellcheck",
+                "j178/prek",
+                "helm/helm",
+                "norwoodj/helm-docs",
+                "kubernetes-sigs/kind",
+                "kindest/node",
+                "pre-commit/pre-commit-hooks",
+                "zizmorcore/zizmor-action",
+                "gitleaks/gitleaks",
+                "renovatebot/pre-commit-hooks"
+            ],
+            "semanticCommitScope": "ci"
+        },
+        {
+            "matchDatasources": [
+                "docker"
+            ],
+            "matchPackageNames": [
+                "gcr.io/distroless/**"
+            ],
+            "semanticCommitScope": "build"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+# The build needs the Go module and nothing else, so everything is excluded and
+# only the module files and the Go sources are allowed. A file added to the tree
+# later never reaches a build layer unless it is listed here.
+*
+!go.mod
+!go.sum
+!**/*.go
+# Hidden files and directories are excluded at any depth, even when they hold Go files.
+**/.*
+**/.*/**

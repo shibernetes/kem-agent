@@ -1,0 +1,5 @@
+service:
+  shutdown_timeout: 30x
+  cel_eval_timeout: 250q
+  http_server:
+    addr: "8080"

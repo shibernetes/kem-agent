@@ -1,0 +1,9 @@
+# Configuration of the KinD cluster used by the e2e workflow. The node image
+# tag defines the Kubernetes version, and is built for only one kind release.
+# Renovate updates the image tag together with the KinD version in .github/workflows/e2e.yaml.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: e2e
+nodes:
+  - role: control-plane
+    image: kindest/node:v1.37.0@sha256:a1ed56cfb0e7b93589bdf97c8cd566405a265939e3620fc4f5de89adff580ae5

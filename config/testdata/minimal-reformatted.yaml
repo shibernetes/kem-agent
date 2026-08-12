@@ -1,0 +1,18 @@
+# The same configuration, written differently.
+checkpoint:
+    store:
+        name: "kem-agent-checkpoint"
+        type: configmap
+
+pipelines:
+    all:
+        sinks: [out]
+
+sinks:
+    out:
+        endpoint: "collector:4317"
+        type: "fake"
+
+source:
+    watches:
+        - namespace: 'team-a'

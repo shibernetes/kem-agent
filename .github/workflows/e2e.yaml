@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: E2E
+
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  chart-install:
+    name: Chart install
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # renovate: datasource=github-releases depName=helm/helm
+      HELM_VERSION: v4.3.0
+      # renovate: datasource=github-releases depName=kubernetes-sigs/kind
+      KIND_VERSION: v0.33.0
+      CLUSTER: e2e
+      IMAGE: kem-agent:e2e
+      NAMESPACE: e2e
+      RELEASE: kem-agent
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the agent image
+        run: docker build --tag "$IMAGE" .
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Create the kind cluster
+        uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
+        with:
+          version: ${{ env.KIND_VERSION }}
+          config: .kind.yaml
+          cluster_name: ${{ env.CLUSTER }}
+
+      - name: Load the image into the cluster
+        run: kind load docker-image "$IMAGE" --name "$CLUSTER"
+
+      # The minimal values declare a stdout pipeline on the release namespace.
+      - name: Install the chart
+        run: |
+          helm install "$RELEASE" deploy/chart \
+            --namespace "$NAMESPACE" \
+            --create-namespace \
+            --values deploy/chart/ci/minimal.values.yaml \
+            --set image.repository="${IMAGE%:*}" \
+            --set image.tag="${IMAGE#*:}" \
+            --set image.pullPolicy=Never \
+            --wait \
+            --timeout 3m
+
+      # The event is created once the agent is ready, so it reaches the stdout
+      # sink only if the agent watches its namespace and delivers what it reads.
+      - name: Verify an event is delivered
+        run: |
+          note="e2e probe ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+          kubectl create --namespace "$NAMESPACE" --filename - <<EOF
+          apiVersion: events.k8s.io/v1
+          kind: Event
+          metadata:
+            generateName: e2e-probe-
+          eventTime: "$(date -u +%Y-%m-%dT%H:%M:%S.000000Z)"
+          reportingController: kem-agent/e2e
+          reportingInstance: github-actions
+          action: Probe
+          reason: E2EProbe
+          type: Normal
+          note: "${note}"
+          regarding:
+            apiVersion: apps/v1
+            kind: Deployment
+            name: ${RELEASE}
+            namespace: ${NAMESPACE}
+          EOF
+          for attempt in $(seq 30); do
+            logs=$(kubectl logs --namespace "$NAMESPACE" "deployment/$RELEASE")
+            if grep -qF "$note" <<<"$logs"; then
+              echo "The agent delivered the event after ${attempt} checks."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error title=Event delivery::the agent did not deliver the probe event within a minute"
+          exit 1
+
+      - name: Verify the agent did not restart
+        run: |
+          restarts=$(kubectl get pods --namespace "$NAMESPACE" \
+            --selector "app.kubernetes.io/instance=$RELEASE" \
+            --output 'jsonpath={.items[*].status.containerStatuses[*].restartCount}')
+          if [ "$restarts" != "0" ]; then
+            echo "::error title=Agent restarts::the agent container restarted '${restarts}' times"
+            exit 1
+          fi
+
+      - name: Show diagnostics
+        if: failure()
+        run: |
+          kubectl get all,events --namespace "$NAMESPACE" || true
+          kubectl describe pods --namespace "$NAMESPACE" --selector "app.kubernetes.io/instance=$RELEASE" || true
+          kubectl logs --namespace "$NAMESPACE" "deployment/$RELEASE" --previous || true
+          kubectl logs --namespace "$NAMESPACE" "deployment/$RELEASE" || true

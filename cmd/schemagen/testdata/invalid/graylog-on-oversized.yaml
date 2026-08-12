@@ -1,0 +1,17 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  siem:
+    type: graylog
+    host: graylog
+    batch:
+      on_oversized: split
+pipelines:
+  all:
+    sinks:
+      - siem
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

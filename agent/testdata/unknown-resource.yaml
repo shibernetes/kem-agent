@@ -1,0 +1,17 @@
+source:
+  watches:
+    - namespace: team-a
+  enrichment:
+    resources:
+      - pdos
+sinks:
+  console:
+    type: stdout
+pipelines:
+  archive:
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: cp

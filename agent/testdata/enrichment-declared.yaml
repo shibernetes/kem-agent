@@ -1,0 +1,19 @@
+source:
+  watches:
+    - namespace: team-a
+  enrichment:
+    resources:
+      - pods
+sinks:
+  console:
+    type: stdout
+pipelines:
+  owned:
+    filters:
+      - "has(event.regardingObject)"
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: cp

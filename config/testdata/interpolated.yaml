@@ -1,0 +1,18 @@
+service:
+  cluster_name: ${KEM_TEST_CLUSTER}
+  shutdown_timeout: ${KEM_TEST_TIMEOUT}
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  out:
+    type: fake
+    endpoint: ${KEM_TEST_ENDPOINT}
+pipelines:
+  all:
+    sinks:
+      - out
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

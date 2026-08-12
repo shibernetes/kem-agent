@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: kem-agent
+
+builds:
+  - main: ./cmd/agent
+    binary: agent
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+      # Without VCS stamping, a binary whose -X flags missed their variables
+      # reports the dev defaults, which the release workflow checks for, rather
+      # than a tag and commit read from the build info.
+      - -buildvcs=false
+    ldflags:
+      - -s -w
+      - -X github.com/shibernetes/kem-agent/internal/version.version={{ .Tag }}
+      - -X github.com/shibernetes/kem-agent/internal/version.commit={{ .FullCommit }}
+      - -X github.com/shibernetes/kem-agent/internal/version.treeState={{ if .IsGitDirty }}dirty{{ else }}clean{{ end }}
+      - -X github.com/shibernetes/kem-agent/internal/version.date={{ .Date }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+checksum:
+  name_template: checksums.txt
+
+# Every commit is listed, chore and docs commits included.
+changelog:
+  sort: asc
+  abbrev: 7
+
+dockers_v2:
+  - images:
+      - ghcr.io/shibernetes/kem-agent
+    dockerfile: goreleaser.Dockerfile
+    tags:
+      # An empty tag is skipped, so a prerelease never moves latest.
+      - "{{ .Version }}"
+      - "{{ if not .Prerelease }}latest{{ end }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+    sbom: false
+    labels:
+      org.opencontainers.image.title: kem-agent
+      org.opencontainers.image.description: Kubernetes Events collection and forwarding agent
+      org.opencontainers.image.source: https://github.com/shibernetes/kem-agent
+      org.opencontainers.image.licenses: MIT
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.created: "{{ .Date }}"
+      org.opencontainers.image.base.name: gcr.io/distroless/static:nonroot
+
+# A keyless cosign signature of the checksum file, which covers every archive.
+# The sigstore bundle is uploaded to the GitHub release. Verify it with the
+# signer identity pinned, or any valid Sigstore signature over the file passes:
+#   cosign verify-blob --bundle checksums.txt.sigstore.json \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+#     --certificate-identity-regexp '^https://github.com/shibernetes/kem-agent/\.github/workflows/release\.yaml@refs/tags/' \
+#     checksums.txt
+# An image verifies the same way, with `cosign verify <image>@<digest>` and the
+# same two identity flags.
+signs:
+  - cmd: cosign
+    signature: "${artifact}.sigstore.json"
+    args:
+      - "sign-blob"
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+    artifacts: checksum
+    output: true
+
+# A keyless cosign signature of each pushed image manifest, by digest.
+# The default empty artifacts filter is what selects the dockers_v2 images.
+docker_signs:
+  - cmd: cosign
+    args:
+      - "sign"
+      - "${artifact}@${digest}"
+      - "--yes"
+    output: true
+
+release:
+  prerelease: auto
+  draft: true
+  replace_existing_draft: true

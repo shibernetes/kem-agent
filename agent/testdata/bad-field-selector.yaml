@@ -1,0 +1,17 @@
+service:
+  cluster_name: prod
+source:
+  watches:
+    - namespace: team-a
+      field_selector: note=oom
+sinks:
+  console:
+    type: stdout
+pipelines:
+  archive:
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: cp

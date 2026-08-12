@@ -1,0 +1,35 @@
+{
+    "specversion": "1.0",
+    "id": "d1f5c2a0-1111-2222-3333-444455556666/184213",
+    "source": "kem-agent-test",
+    "type": "io.k8s.event",
+    "time": "2009-01-03T18:15:05Z",
+    "datacontenttype": "application/json",
+    "data": {
+        "uid": "d1f5c2a0-1111-2222-3333-444455556666",
+        "resourceVersion": "184213",
+        "namespace": "team-a",
+        "name": "web-1.17f0a2b3c4d5e6f7",
+        "labels": {
+            "app.kubernetes.io/name": "web",
+            "tier": "front"
+        },
+        "annotations": {
+            "team": "platform"
+        },
+        "eventTime": "2009-01-03T18:15:05.000000Z",
+        "reportingController": "kubelet",
+        "reportingInstance": "kubelet-node-001",
+        "action": "Killing",
+        "reason": "OOMKilled",
+        "regarding": {
+            "kind": "Pod",
+            "namespace": "team-a",
+            "name": "web-1",
+            "uid": "9c8b7a6d-5e4f-3210-9876-543210fedcba",
+            "apiVersion": "v1"
+        },
+        "note": "Container web was OOM killed",
+        "type": "Warning"
+    }
+}

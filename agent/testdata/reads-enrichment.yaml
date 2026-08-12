@@ -1,0 +1,21 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  count:
+    type: metrics
+    metrics:
+      - name: warnings
+        help: "warnings seen"
+        labels:
+          team: regardingObject.labels.team
+pipelines:
+  owned:
+    filters:
+      - "has(event.regardingObject) && event.regardingObject.owner.kind == 'Deployment'"
+    sinks:
+      - count
+checkpoint:
+  store:
+    type: configmap
+    name: cp

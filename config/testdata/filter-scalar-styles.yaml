@@ -1,0 +1,31 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  out:
+    type: fake
+    endpoint: collector:4317
+pipelines:
+  literal:
+    filters:
+      - |
+        event.type == 'Warning' &&
+        event.reason == 'BackOff'
+    sinks:
+      - out
+  folded:
+    filters:
+      - >
+        event.type == 'Warning' &&
+        event.reason == 'BackOff'
+    sinks:
+      - out
+  quoted:
+    filters:
+      - "event.type == 'Warning'"
+    sinks:
+      - out
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

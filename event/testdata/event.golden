@@ -1,0 +1,56 @@
+{
+  "uid": "8f1c2d3e-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
+  "resourceVersion": "48291",
+  "namespace": "team-a",
+  "name": "web-7d9f.17c8e2a1b4f5",
+  "labels": {
+    "app": "web",
+    "tier": "front"
+  },
+  "annotations": {
+    "kubernetes.io/change-cause": "rollout"
+  },
+  "eventTime": "2009-01-03T10:29:15.123456Z",
+  "series": {
+    "count": 7,
+    "lastObservedTime": "2009-01-03T10:30:15.123456Z"
+  },
+  "reportingController": "kubelet",
+  "reportingInstance": "kubelet-node-1",
+  "action": "Pulling",
+  "reason": "BackOff",
+  "regarding": {
+    "kind": "Pod",
+    "namespace": "team-a",
+    "name": "web-7d9f",
+    "uid": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+    "apiVersion": "v1",
+    "resourceVersion": "48277",
+    "fieldPath": "spec.containers{web}"
+  },
+  "related": {
+    "kind": "ConfigMap",
+    "namespace": "team-a",
+    "name": "web-config",
+    "uid": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+    "apiVersion": "v1"
+  },
+  "note": "Back-off restarting failed container web, last state <nil> & \"unknown\"",
+  "type": "Warning",
+  "regardingObject": {
+    "labels": {
+      "app": "web"
+    },
+    "annotations": {
+      "cni.projectcalico.org/podIP": "10.1.2.3/32"
+    },
+    "owner": {
+      "kind": "ReplicaSet",
+      "namespace": "team-a",
+      "name": "web-7d9f4c",
+      "uid": "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+      "apiVersion": "apps/v1"
+    },
+    "terminating": true
+  }
+}

@@ -1,0 +1,14 @@
+# A cluster-wide watch with hot reload enabled, which drops the checksum annotation.
+config:
+  service:
+    hot_reload: true
+  source:
+    watches:
+      - namespace: ""
+  sinks:
+    stdout:
+      type: stdout
+  pipelines:
+    events:
+      sinks:
+        - stdout

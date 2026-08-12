@@ -1,0 +1,242 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+  # Called by the release workflow, so a release runs the
+  # same gates before it builds, signs, and publishes.
+  workflow_call: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          # go.mod is hashed alongside go.sum so the key resolves before
+          # the first dependency lands, and moves when a version bumps.
+          cache-dependency-path: |
+            go.mod
+            **/go.sum
+
+      - name: Verify module tidiness
+        run: |
+          go mod tidy
+          if [ -n "$(git status --porcelain -- go.mod go.sum)" ]; then
+            git status --short -- go.mod go.sum
+            echo "::error::go.mod / go.sum are not tidy. Run 'go mod tidy' and commit the result."
+            exit 1
+          fi
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
+        with:
+          version: v2.13.2
+
+      - name: Run nilaway linter
+        run: |
+          go install go.uber.org/nilaway/cmd/nilaway@v0.0.0-20260808063849-8649a03c818a
+          nilaway -include-pkgs=github.com/shibernetes/kem-agent ./...
+
+  hooks:
+    name: Hooks
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=j178/prek extractVersion=^v(?<version>.+)$
+      PREK_CLI_VERSION: 0.5.2
+      # The Secrets job scans the whole history instead.
+      SKIP: gitleaks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.mod
+            **/go.sum
+
+      # Runs every hook in .pre-commit-config.yaml over the whole tree, the
+      # same checks a commit runs locally. A hook that modifies a file fails
+      # the job, which is how a stale config schema is caught.
+      - name: Run hooks
+        uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
+        with:
+          prek-version: ${{ env.PREK_CLI_VERSION }}
+
+  secrets:
+    name: Secrets
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=gitleaks/gitleaks
+      GITLEAKS_VERSION: v8.30.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The whole history is scanned, so a secret committed without
+          # the hook is found as well.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Scan
+        run: |
+          git log --all --max-count=1 --format=%H
+          go install "github.com/zricethezav/gitleaks/v8@${GITLEAKS_VERSION}"
+          gitleaks git --redact --verbose
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.mod
+            **/go.sum
+
+      - name: Run unit tests
+        run: go test -race -count=1 ./...
+
+      - name: Run allocation tests
+        run: go test -count=1 -run DoesNotAllocate ./...
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.mod
+            **/go.sum
+
+      - name: Build
+        run: go build ./...
+
+  chart:
+    name: Chart
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=helm/helm
+      HELM_VERSION: v4.3.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      # The default values declare no pipeline, so each file under ci/ declares
+      # one and switches on a different set of optional templates. Lint skips
+      # the chart's own fail and required checks, so each file is also templated.
+      - name: Lint and render
+        run: |
+          helm lint --strict deploy/chart
+          for values in deploy/chart/ci/*.values.yaml; do
+            helm lint --strict deploy/chart --values "$values"
+            helm template kem-agent deploy/chart --values "$values" >/dev/null
+          done
+
+  snapshot:
+    name: Release snapshot
+    runs-on: ubuntu-latest
+    env:
+      # renovate: datasource=github-releases depName=goreleaser/goreleaser
+      GORELEASER_VERSION: v2.18.1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # goreleaser needs the full history and tags.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.mod
+            **/go.sum
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      # A snapshot builds the archives and one local image per platform,
+      # and neither signs nor publishes anything.
+      - name: Build release snapshot
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          version: ${{ env.GORELEASER_VERSION }}
+          args: release --snapshot --clean --skip=sign
+
+      # A renamed package or variable silently breaks the -X flags, and no test
+      # can see it. It is checked here because the release workflow reuses this
+      # one before it publishes anything.
+      - name: Verify version stamping
+        run: |
+          bin=$(jq -r '.[] | select(.type == "Binary" and .goos == "linux" and .goarch == "amd64") | .path' dist/artifacts.json)
+          tag=$(jq -r .tag dist/metadata.json)
+          commit=$(jq -r .commit dist/metadata.json)
+          out=$("$bin" version)
+          echo "$out"
+          if ! grep -q " has version ${tag} built " <<<"$out" || ! grep -q " from ${commit::7} on " <<<"$out"; then
+            echo "::error title=Version stamping::the release binary does not report tag ${tag} and commit ${commit::7}"
+            exit 1
+          fi

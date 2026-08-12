@@ -1,0 +1,14 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  out:
+    type: stdout
+pipelines:
+  all:
+    sinks:
+      - typo
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

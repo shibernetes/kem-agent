@@ -1,0 +1,143 @@
+{{- if .Values.rbac.create }}
+{{- $rbac := include "kem-agent.rbac" . | fromJson }}
+{{- $fullname := include "kem-agent.fullname" . }}
+{{- $suffix := printf "-%s" .Release.Namespace }}
+{{- $namespaced := eq $rbac.scope "single" }}
+{{- $roleKind := ternary "Role" "ClusterRole" $namespaced }}
+{{- $roleName := printf "%s%s" $fullname (ternary "" $suffix (and $namespaced (has .Release.Namespace $rbac.namespaces))) }}
+{{- $labels := include "kem-agent.labels" . }}
+{{- $subjects := list (dict "kind" "ServiceAccount" "name" (include "kem-agent.serviceAccountName" .) "namespace" .Release.Namespace) | toYaml }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: {{ $roleKind }}
+metadata:
+  name: {{ $roleName }}
+  {{- if $namespaced }}
+  namespace: {{ first $rbac.namespaces }}
+  {{- end }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  - apiGroups:
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - get
+      - list
+      - watch
+  {{- range $rbac.namespaced }}
+  - apiGroups:
+      - {{ .group | quote }}
+    resources:
+      - {{ .resource }}
+    verbs:
+      - list
+      - watch
+  {{- end }}
+{{- if eq $rbac.scope "cluster" }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $roleName }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $roleName }}
+subjects:
+  {{- $subjects | nindent 2 }}
+{{- else }}
+{{- range $rbac.namespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $roleName }}
+  namespace: {{ . }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{ $roleKind }}
+  name: {{ $roleName }}
+subjects:
+  {{- $subjects | nindent 2 }}
+{{- end }}
+{{- end }}
+{{- with $rbac.clusterScoped }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $fullname }}-cluster-resources{{ $suffix }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  {{- range . }}
+  - apiGroups:
+      - {{ .group | quote }}
+    resources:
+      - {{ .resource }}
+    verbs:
+      - list
+      - watch
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $fullname }}-cluster-resources{{ $suffix }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $fullname }}-cluster-resources{{ $suffix }}
+subjects:
+  {{- $subjects | nindent 2 }}
+{{- end }}
+{{- with $rbac.checkpoint }}
+{{- $checkpointName := printf "%s-checkpoint%s" $fullname (ternary "" $suffix (eq .namespace $.Release.Namespace)) }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ $checkpointName }}
+  namespace: {{ .namespace }}
+  labels:
+    {{- $labels | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      - {{ .name }}
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ $checkpointName }}
+  namespace: {{ .namespace }}
+  labels:
+    {{- $labels | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ $checkpointName }}
+subjects:
+  {{- $subjects | nindent 2 }}
+{{- end }}
+{{- end }}

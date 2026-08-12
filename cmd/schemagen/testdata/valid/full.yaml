@@ -1,0 +1,130 @@
+service:
+  cluster_name: prod-eu-1
+  shutdown_timeout: 45s
+  cel_eval_timeout: 250ms
+  hot_reload: true
+  http_server:
+    addr: ":8080"
+  logging:
+    format: text
+    level: debug
+source:
+  watches:
+    - namespace: team-a
+      field_selector: type=Warning
+    - namespace: platform
+      label_selector: app=web
+  bootstrap_event_max_age: 1h
+  sanitizers:
+    field_limits:
+      enabled: true
+    metadata_count_limit:
+      enabled: true
+      max_labels: 50
+      max_annotations: 50
+    annotation_value_limit:
+      enabled: true
+      max_bytes: 2Ki
+    last_applied_config:
+      enabled: true
+sinks:
+  collector:
+    type: otel
+    endpoint: https://collector:4317
+    compression: gzip
+    headers:
+      x-scope-orgid: tenant-a
+    send_timeout: 5s
+    tls:
+      insecure: false
+      min_version: "1.3"
+      ca_file: /etc/tls/ca.crt
+    batch:
+      max_events: 256
+      max_bytes: 2Mi
+      timeout: 5s
+    queue:
+      max_bytes: 32Mi
+    retry:
+      enabled: true
+      timeout: 30s
+      initial_interval: 500ms
+      max_interval: 10s
+      multiplier: 1.5
+  slack:
+    type: webhook
+    url: https://hooks.example.com/services/x
+    method: POST
+    format: template
+    template: '{"text": "{{ reason }}"}'
+    separator: "\n"
+    auth:
+      bearer: token
+    signature:
+      identifier: v1
+      secret: whsec_MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=
+    send_timeout: 15s
+  audit:
+    type: webhook
+    url: https://audit.example.com/events
+    format: ndjson
+    headers:
+      x-tenant: platform
+    auth:
+      basic:
+        username: kem-agent
+        password: hunter2
+    compression: gzip
+  siem:
+    type: graylog
+    host: graylog
+    port: 12201
+    source_host: kem-agent
+    additional_fields:
+      env: prod
+  archive:
+    type: file
+    path: /var/log/events.jsonl
+    mode: 0640
+  warn-count:
+    type: metrics
+    default_metrics_namespace: kem_events
+    max_series: 1000
+    metric_name_validation_scheme: legacy
+    metrics:
+      - name: warnings
+        help: warning events by namespace
+        labels:
+          ns: namespace
+          reason: reason
+        const_labels:
+          source: kem-agent
+pipelines:
+  archive:
+    sinks:
+      - archive
+      - collector
+      - audit
+  tenant-pod-warnings:
+    watches:
+      - team-a
+    filters:
+      - "event.type == 'Warning'"
+      - "event.regarding.kind == 'Pod'"
+    sinks:
+      - slack
+  platform-warnings:
+    watches:
+      - platform
+    filters:
+      - "event.type == 'Warning'"
+    sinks:
+      - siem
+      - warn-count
+checkpoint:
+  save_interval: 15s
+  store:
+    type: file
+    path: /var/lib/kem-agent/checkpoint.json
+    create_directory: true
+    directory_mode: 0700

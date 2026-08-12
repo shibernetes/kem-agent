@@ -1,0 +1,11 @@
+# Artifact Hub repository metadata for oci://ghcr.io/shibernetes/charts/kem-agent.
+# It is not part of the chart. It is pushed to the registry once, and again
+# whenever it changes:
+#
+#   oras push ghcr.io/shibernetes/charts/kem-agent:artifacthub.io \
+#     --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
+#     artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
+repositoryID: bc0b6368-bc65-4955-87c8-6e5669b43408
+owners:
+  - name: William Poussier
+    email: william.poussier@gmail.com

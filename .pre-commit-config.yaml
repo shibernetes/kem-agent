@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://www.schemastore.org/pre-commit-config.json
+#
+# Git hooks run by prek or pre-commit, installed once with `prek install` or `pre-commit install`.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+        name: "Check for merge conflicts"
+      - id: detect-private-key
+        name: "Detect private key"
+      - id: trailing-whitespace
+        name: "Trim trailing whitespace"
+        exclude: (^|/)testdata/
+      - id: end-of-file-fixer
+        name: "Fix end of files"
+        exclude: (^|/)testdata/|\.svg$
+      - id: mixed-line-ending
+        name: "Mixed line ending"
+        exclude: (^|/)testdata/
+
+  - repo: local
+    hooks:
+      # Regenerates the config schema from the Go config types. A commit whose
+      # schema is stale fails once and goes through when the regenerated file is
+      # staged with it. The hook stages nothing itself, since a file it staged
+      # would count as unmodified and CI would pass on a stale schema.
+      - id: config-schema
+        name: "Regenerate the config JSON schema"
+        entry: go generate ./...
+        language: system
+        pass_filenames: false
+        files: \.go$
+
+  - repo: https://github.com/norwoodj/helm-docs
+    rev: v1.14.2
+    hooks:
+      # Regenerates the chart README from README.md.gotmpl and the values
+      # comments, with the values table in the order of values.yaml. Like the
+      # config schema hook, it stages nothing, so CI fails on a stale README.
+      - id: helm-docs-built
+        name: "Render the chart README"
+        args:
+          - --chart-search-root=deploy/chart
+          - --sort-values-order=file
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      # shellcheck is built alongside, so the scripts in run steps are checked
+      # as they are in CI. The language is specified for Renovate, which only
+      # updates the additional dependencies of a hook that declares it.
+      - id: actionlint
+        language: golang
+        additional_dependencies:
+          - github.com/wasilibs/go-shellcheck/cmd/shellcheck@v0.11.1
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      # Scans the staged changes only, so it has nothing to scan in CI,
+      # where the Secrets job scans the whole history instead.
+      - id: gitleaks
+
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 44.82.4
+    hooks:
+      # Strict mode also fails on a config that needs migrating. The version
+      # follows the one the Renovate workflow runs.
+      - id: renovate-config-validator
+        name: "Validate Renovate config"
+        args:
+          - --strict

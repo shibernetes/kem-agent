@@ -1,0 +1,9 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "The webhook signing secret in the schemagen fixture is a fake value."
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''(^|/)cmd/schemagen/testdata/valid/full\.yaml$''']
+regexes = ['''^whsec_MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=$''']

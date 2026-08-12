@@ -1,0 +1,40 @@
+{{- $fullname := include "kem-agent.fullname" . }}
+{{- $port := include "kem-agent.httpPort" . }}
+{{- $rbac := include "kem-agent.rbac" . | fromJson -}}
+{{ .Chart.Name }} {{ .Chart.AppVersion }} is deployed as {{ $fullname }} in namespace {{ .Release.Namespace }}, and watches
+{{- if eq $rbac.scope "cluster" }} all namespaces.
+{{- else if eq $rbac.scope "single" }} namespace {{ first $rbac.namespaces }}.
+{{- else }} namespaces {{ join ", " $rbac.namespaces }}.
+{{- end }}
+
+Follow the agent logs with:
+
+  kubectl logs -n {{ .Release.Namespace }} deploy/{{ $fullname }} -f
+
+Inspect the metrics with:
+
+  kubectl port-forward -n {{ .Release.Namespace }} svc/{{ $fullname }} {{ $port }}
+  curl localhost:{{ $port }}/metrics
+{{- if dig "service" "hot_reload" false .Values.config }}
+
+Hot reload is enabled, so a configuration change does not restart the pod.
+Filter changes apply in place, and any other change takes effect after:
+
+  kubectl rollout restart -n {{ .Release.Namespace }} deploy/{{ $fullname }}
+{{- end }}
+{{- if .Values.persistence.enabled }}
+{{- if not .Values.persistence.existingClaim }}
+
+The {{ $fullname }} PersistentVolumeClaim is kept on uninstall, so its data
+survives a reinstall. Delete it manually to discard that data.
+{{- end }}
+{{- else if eq (toString (dig "checkpoint" "store" "type" "" .Values.config)) "file" }}
+
+WARNING: the checkpoint uses a file store while persistence is disabled. The
+root filesystem is read-only, so unless extraVolumeMounts puts a volume at
+config.checkpoint.store.path, the agent cannot save the checkpoint and every
+start replays the retained events.
+To keep it across restarts, set persistence.enabled=true, which mounts a volume
+at {{ .Values.persistence.mountPath }}, and set config.checkpoint.store.path to
+point inside it.
+{{- end }}

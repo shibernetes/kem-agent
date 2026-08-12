@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: Renovate
+
+on:
+  schedule:
+    # Monday's run for the routine updates.
+    - cron: "16 6 * * *"
+    # Twelve hours apart, for security fixes
+    - cron: "16 18 * * *"
+  workflow_dispatch: {}
+
+# Renovate authenticates as the GitHub App, so the job token needs nothing.
+permissions: {}
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    name: Renovate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # The installation token is scoped to this repository, outlives the
+      # job timeout, and is revoked when the job ends.
+      - name: Create the App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+          permission-administration: read
+          permission-checks: write
+          permission-contents: write
+          permission-issues: write
+          permission-members: read
+          permission-pull-requests: write
+          permission-statuses: write
+          permission-vulnerability-alerts: read
+          permission-workflows: write
+
+      - name: Run Renovate
+        uses: renovatebot/github-action@c314dda4a9a93b08239ec978f2043b9a433b9ac4 # v46.3.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          renovate-version: 44.82.4
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_ONBOARDING: "false"

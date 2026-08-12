@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: Zizmor
+
+on:
+  push:
+    branches:
+      - master
+  pull_request: {}
+
+permissions: {}
+
+concurrency:
+  group: zizmor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write # The results are uploaded to code scanning
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The action runs the zizmor image, pinned by digest, so
+      # updating the action updates zizmor too.
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@cc914d7f3750a2d13d75c7f184a1060aa0e9d482 # v0.6.4
+        with:
+          persona: auditor
+          config: .github/zizmor.yaml
+          advanced-security: ${{ !github.event.repository.private }}
+          annotations: ${{ github.event.repository.private }}

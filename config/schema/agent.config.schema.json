@@ -1,0 +1,1359 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/shibernetes/kem-agent/config",
+    "$defs": {
+        "config.Checkpoint": {
+            "properties": {
+                "save_interval": {
+                    "$ref": "#/$defs/config.units.Duration",
+                    "default": "15s"
+                },
+                "store": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "const": "configmap"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "namespace": {
+                                    "type": "string"
+                                }
+                            },
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                                "type",
+                                "name"
+                            ],
+                            "description": "Config defines the configuration for a [Store]."
+                        },
+                        {
+                            "properties": {
+                                "type": {
+                                    "type": "string",
+                                    "const": "file"
+                                },
+                                "path": {
+                                    "type": "string"
+                                },
+                                "create_directory": {
+                                    "type": "boolean",
+                                    "description": "CreateDirectory creates the directory holding the state file rather than failing when it does not exist.",
+                                    "default": false
+                                },
+                                "directory_mode": {
+                                    "type": "integer",
+                                    "description": "DirectoryMode is the permission a created directory takes, and is written in octal, with the leading zero.",
+                                    "default": 448
+                                }
+                            },
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                                "type",
+                                "path"
+                            ],
+                            "description": "Config defines the configuration for a [Store]."
+                        }
+                    ]
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+                "store"
+            ],
+            "description": "Checkpoint configures where and how often the watch read positions are persisted."
+        },
+        "config.HTTPServer": {
+            "properties": {
+                "addr": {
+                    "type": "string",
+                    "default": ":8080"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "HTTPServer configures the local HTTP server that exposes the metrics, liveness/readiness probes and reload endpoints."
+        },
+        "config.LogFormat": {
+            "type": "string",
+            "enum": [
+                "json",
+                "text"
+            ],
+            "description": "The log output format."
+        },
+        "config.LogLevel": {
+            "type": "string",
+            "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+            ],
+            "description": "The log level."
+        },
+        "config.Logging": {
+            "properties": {
+                "format": {
+                    "$ref": "#/$defs/config.LogFormat",
+                    "default": "json"
+                },
+                "level": {
+                    "$ref": "#/$defs/config.LogLevel",
+                    "default": "info"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "Logging configures the logger output format and level."
+        },
+        "config.PprofServer": {
+            "properties": {
+                "addr": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "PprofServer configures the listener serving the net/http/pprof handlers."
+        },
+        "config.Service": {
+            "properties": {
+                "cluster_name": {
+                    "type": "string"
+                },
+                "shutdown_timeout": {
+                    "$ref": "#/$defs/config.units.Duration",
+                    "default": "30s"
+                },
+                "cel_eval_timeout": {
+                    "$ref": "#/$defs/config.units.Duration",
+                    "default": "250ms"
+                },
+                "hot_reload": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "http_server": {
+                    "$ref": "#/$defs/config.HTTPServer"
+                },
+                "pprof_server": {
+                    "$ref": "#/$defs/config.PprofServer"
+                },
+                "logging": {
+                    "$ref": "#/$defs/config.Logging"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "Service is the configuration of the agent service."
+        },
+        "config.units.Bytes": {
+            "oneOf": [
+                {
+                    "type": "integer",
+                    "minimum": 0
+                },
+                {
+                    "type": "string",
+                    "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                }
+            ],
+            "description": "A memory quantity expressed in bytes.",
+            "examples": [
+                4096,
+                "32Mi",
+                "1Gi"
+            ]
+        },
+        "config.units.Duration": {
+            "type": "string",
+            "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+            "description": "A time duration, written in the format accepted by Go's time.ParseDuration.",
+            "examples": [
+                "250ms",
+                "30s",
+                "1m30s"
+            ]
+        },
+        "pipeline.Config": {
+            "properties": {
+                "watches": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "filters": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                },
+                "sinks": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "Config defines the configuration of a pipeline."
+        },
+        "source.Config": {
+            "properties": {
+                "watches": {
+                    "items": {
+                        "$ref": "#/$defs/source.WatchConfig"
+                    },
+                    "type": "array",
+                    "minItems": 1
+                },
+                "bootstrap_event_max_age": {
+                    "$ref": "#/$defs/config.units.Duration"
+                },
+                "sanitizers": {
+                    "$ref": "#/$defs/source.sanitizer.Config"
+                },
+                "enrichment": {
+                    "$ref": "#/$defs/source.enricher.Config"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "Config defines the configuration of the Kubernetes events source."
+        },
+        "source.WatchConfig": {
+            "properties": {
+                "namespace": {
+                    "type": "string"
+                },
+                "label_selector": {
+                    "type": "string"
+                },
+                "field_selector": {
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "WatchConfig configures a watch over the events of a single namespace or over the events of every namespace when no namespace is specified. Both selectors are applied by the APIServer, so they reduce what it sends rather than what the agent reads and discards."
+        },
+        "source.enricher.Config": {
+            "properties": {
+                "resources": {
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": "array",
+                    "description": "Resources lists the resources whose metadata is cached, written as resource.group, where a name with no group belongs to the core group."
+                },
+                "sync_timeout": {
+                    "$ref": "#/$defs/config.units.Duration",
+                    "description": "SyncTimeout bounds the initial sync of every cache.",
+                    "default": "1m0s"
+                },
+                "labels": {
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true
+                        },
+                        "keys": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "description": "Allowlist lists the metadata keys copied onto an enriched object. An empty list keeps every key. To reject all, set Enabled to false."
+                },
+                "annotations": {
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "keys": {
+                            "items": {
+                                "type": "string"
+                            },
+                            "type": "array"
+                        }
+                    },
+                    "additionalProperties": false,
+                    "type": "object",
+                    "description": "Allowlist lists the metadata keys copied onto an enriched object. An empty list keeps every key. To reject all, set Enabled to false."
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "Config defines the configuration for the enrichment of the object an event regards."
+        },
+        "source.sanitizer.AnnotationValueLimit": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "max_bytes": {
+                    "$ref": "#/$defs/config.units.Bytes",
+                    "default": "4Ki"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "AnnotationValueLimit bounds the length of a single annotation value. A maximum of zero leaves every value intact. It is the only sanitizer that can truncate entirely legitimate data."
+        },
+        "source.sanitizer.Config": {
+            "properties": {
+                "field_limits": {
+                    "$ref": "#/$defs/source.sanitizer.FieldLimits"
+                },
+                "last_applied_config": {
+                    "$ref": "#/$defs/source.sanitizer.LastAppliedConfig"
+                },
+                "metadata_count_limit": {
+                    "$ref": "#/$defs/source.sanitizer.MetadataCountLimit"
+                },
+                "annotation_value_limit": {
+                    "$ref": "#/$defs/source.sanitizer.AnnotationValueLimit"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "Config defines the configuration for the sanitizers applied to every event."
+        },
+        "source.sanitizer.FieldLimits": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "FieldLimits shortens the event string fields events.k8s.io/v1 bounds, and the fields of the object references an event carries, which no API bounds at all."
+        },
+        "source.sanitizer.LastAppliedConfig": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "LastAppliedConfig drops the last-applied-configuration annotation kubectl writes, which mirrors the whole object it was applied to."
+        },
+        "source.sanitizer.MetadataCountLimit": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "max_labels": {
+                    "type": "integer",
+                    "default": 100
+                },
+                "max_annotations": {
+                    "type": "integer",
+                    "default": 100
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "MetadataCountLimit bounds how many labels and annotations an event keeps. A maximum of zero leaves its own map unbounded, so one of the two can be capped while the other is not."
+        }
+    },
+    "properties": {
+        "service": {
+            "$ref": "#/$defs/config.Service"
+        },
+        "source": {
+            "$ref": "#/$defs/source.Config"
+        },
+        "sinks": {
+            "additionalProperties": {
+                "oneOf": [
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "const": "file"
+                            },
+                            "path": {
+                                "type": "string"
+                            },
+                            "mode": {
+                                "type": "integer",
+                                "default": 420
+                            },
+                            "batch": {
+                                "properties": {
+                                    "max_events": {
+                                        "type": "integer",
+                                        "default": 512
+                                    },
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "4Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "5s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "queue": {
+                                "properties": {
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "32Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "retry": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "30s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "initial_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "500ms",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "max_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "10s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "multiplier": {
+                                        "type": "number",
+                                        "default": 1.5
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "path"
+                        ],
+                        "description": "Config defines the configuration of the file sink. Mode is the permission a created file takes, written in octal form with a leading zero. An existing file keeps the permission it has."
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "const": "graylog"
+                            },
+                            "host": {
+                                "type": "string"
+                            },
+                            "port": {
+                                "type": "integer",
+                                "default": 12201
+                            },
+                            "source_host": {
+                                "type": "string"
+                            },
+                            "additional_fields": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            "send_timeout": {
+                                "type": "string",
+                                "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "default": "5s",
+                                "examples": [
+                                    "250ms",
+                                    "30s",
+                                    "1m30s"
+                                ]
+                            },
+                            "tls": {
+                                "properties": {
+                                    "insecure": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "insecure_skip_verify": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "min_version": {
+                                        "type": "string"
+                                    },
+                                    "ca_file": {
+                                        "type": "string"
+                                    },
+                                    "ca_pem": {
+                                        "type": "string"
+                                    },
+                                    "include_system_ca_certs_pool": {
+                                        "type": "boolean",
+                                        "default": false
+                                    },
+                                    "cert_file": {
+                                        "type": "string"
+                                    },
+                                    "cert_pem": {
+                                        "type": "string"
+                                    },
+                                    "key_file": {
+                                        "type": "string"
+                                    },
+                                    "key_pem": {
+                                        "type": "string"
+                                    },
+                                    "server_name": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "batch": {
+                                "properties": {
+                                    "max_events": {
+                                        "type": "integer",
+                                        "default": 512
+                                    },
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "4Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "5s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "queue": {
+                                "properties": {
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "32Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "retry": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "30s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "initial_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "500ms",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "max_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "10s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "multiplier": {
+                                        "type": "number",
+                                        "default": 1.5
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "host"
+                        ],
+                        "description": "Config defines the configuration of the Graylog sink."
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "const": "metrics"
+                            },
+                            "default_metrics_namespace": {
+                                "type": "string",
+                                "default": "kem_events"
+                            },
+                            "max_series": {
+                                "type": "integer"
+                            },
+                            "metric_name_validation_scheme": {
+                                "type": "string",
+                                "enum": [
+                                    "legacy",
+                                    "utf8"
+                                ],
+                                "default": "legacy"
+                            },
+                            "metrics": {
+                                "items": {
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "namespace": {
+                                            "type": "string"
+                                        },
+                                        "subsystem": {
+                                            "type": "string"
+                                        },
+                                        "help": {
+                                            "type": "string"
+                                        },
+                                        "labels": {
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            },
+                                            "type": "object"
+                                        },
+                                        "const_labels": {
+                                            "additionalProperties": {
+                                                "type": "string"
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "additionalProperties": false,
+                                    "type": "object",
+                                    "required": [
+                                        "name",
+                                        "help"
+                                    ],
+                                    "description": "Metric defines one instrument the sink registers, incremented once per event it records. Counters are the only kind, since an event has no value a gauge or a histogram could take."
+                                },
+                                "type": "array"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "metrics"
+                        ],
+                        "description": "Config defines the configuration of the metrics sink."
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "const": "otel"
+                            },
+                            "endpoint": {
+                                "type": "string"
+                            },
+                            "compression": {
+                                "type": "string",
+                                "enum": [
+                                    "none",
+                                    "gzip"
+                                ],
+                                "default": "gzip"
+                            },
+                            "headers": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            "send_timeout": {
+                                "type": "string",
+                                "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "default": "5s",
+                                "examples": [
+                                    "250ms",
+                                    "30s",
+                                    "1m30s"
+                                ]
+                            },
+                            "tls": {
+                                "properties": {
+                                    "insecure": {
+                                        "type": "boolean"
+                                    },
+                                    "insecure_skip_verify": {
+                                        "type": "boolean"
+                                    },
+                                    "min_version": {
+                                        "type": "string"
+                                    },
+                                    "ca_file": {
+                                        "type": "string"
+                                    },
+                                    "ca_pem": {
+                                        "type": "string"
+                                    },
+                                    "include_system_ca_certs_pool": {
+                                        "type": "boolean"
+                                    },
+                                    "cert_file": {
+                                        "type": "string"
+                                    },
+                                    "cert_pem": {
+                                        "type": "string"
+                                    },
+                                    "key_file": {
+                                        "type": "string"
+                                    },
+                                    "key_pem": {
+                                        "type": "string"
+                                    },
+                                    "server_name": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "batch": {
+                                "properties": {
+                                    "max_events": {
+                                        "type": "integer",
+                                        "default": 512
+                                    },
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "2Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "5s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "queue": {
+                                "properties": {
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "32Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "retry": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "30s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "initial_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "500ms",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "max_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "10s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "multiplier": {
+                                        "type": "number",
+                                        "default": 1.5
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "endpoint"
+                        ],
+                        "description": "Config defines the configuration of the OTel sink."
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "const": "stdout"
+                            },
+                            "batch": {
+                                "properties": {
+                                    "max_events": {
+                                        "type": "integer",
+                                        "default": 512
+                                    },
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "4Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "5s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "queue": {
+                                "properties": {
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "32Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "retry": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "30s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "initial_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "500ms",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "max_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "10s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "multiplier": {
+                                        "type": "number",
+                                        "default": 1.5
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type"
+                        ],
+                        "description": "Config defines the configuration of the stdout sink."
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
+                                "const": "webhook"
+                            },
+                            "url": {
+                                "type": "string"
+                            },
+                            "method": {
+                                "type": "string",
+                                "default": "POST"
+                            },
+                            "format": {
+                                "type": "string",
+                                "enum": [
+                                    "json-list",
+                                    "ndjson",
+                                    "cloudevents",
+                                    "template"
+                                ],
+                                "default": "json-list"
+                            },
+                            "template": {
+                                "type": "string"
+                            },
+                            "separator": {
+                                "type": "string"
+                            },
+                            "cloudevents": {
+                                "properties": {
+                                    "source": {
+                                        "type": "string"
+                                    },
+                                    "type": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "headers": {
+                                "additionalProperties": {
+                                    "type": "string"
+                                },
+                                "type": "object"
+                            },
+                            "auth": {
+                                "properties": {
+                                    "basic": {
+                                        "properties": {
+                                            "username": {
+                                                "type": "string"
+                                            },
+                                            "password": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                            "username"
+                                        ]
+                                    },
+                                    "bearer": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "signature": {
+                                "properties": {
+                                    "identifier": {
+                                        "type": "string"
+                                    },
+                                    "secret": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "compression": {
+                                "type": "string",
+                                "enum": [
+                                    "none",
+                                    "gzip",
+                                    "zstd"
+                                ],
+                                "default": "none"
+                            },
+                            "send_timeout": {
+                                "type": "string",
+                                "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "default": "15s",
+                                "examples": [
+                                    "250ms",
+                                    "30s",
+                                    "1m30s"
+                                ]
+                            },
+                            "tls": {
+                                "properties": {
+                                    "insecure": {
+                                        "type": "boolean"
+                                    },
+                                    "insecure_skip_verify": {
+                                        "type": "boolean"
+                                    },
+                                    "min_version": {
+                                        "type": "string"
+                                    },
+                                    "ca_file": {
+                                        "type": "string"
+                                    },
+                                    "ca_pem": {
+                                        "type": "string"
+                                    },
+                                    "include_system_ca_certs_pool": {
+                                        "type": "boolean"
+                                    },
+                                    "cert_file": {
+                                        "type": "string"
+                                    },
+                                    "cert_pem": {
+                                        "type": "string"
+                                    },
+                                    "key_file": {
+                                        "type": "string"
+                                    },
+                                    "key_pem": {
+                                        "type": "string"
+                                    },
+                                    "server_name": {
+                                        "type": "string"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "batch": {
+                                "properties": {
+                                    "max_events": {
+                                        "type": "integer",
+                                        "default": 512
+                                    },
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "4Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "5s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "queue": {
+                                "properties": {
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "default": "32Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            },
+                            "retry": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "default": true
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "30s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "initial_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "500ms",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "max_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "default": "10s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "multiplier": {
+                                        "type": "number",
+                                        "default": 1.5
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "url"
+                        ],
+                        "description": "Config defines the configuration of the webhook sink."
+                    }
+                ]
+            },
+            "type": "object"
+        },
+        "pipelines": {
+            "additionalProperties": {
+                "$ref": "#/$defs/pipeline.Config"
+            },
+            "type": "object"
+        },
+        "checkpoint": {
+            "$ref": "#/$defs/config.Checkpoint"
+        }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+        "source",
+        "sinks",
+        "pipelines",
+        "checkpoint"
+    ],
+    "description": "Config is the root agent configuration."
+}
