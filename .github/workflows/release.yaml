@@ -33,6 +33,7 @@ jobs:
     needs: guard
     permissions:
       contents: read
+      pull-requests: read # read by the changes job in ci.yaml
     uses: ./.github/workflows/ci.yaml
 
   release:
