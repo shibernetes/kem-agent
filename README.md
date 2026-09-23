@@ -8,7 +8,7 @@
   Kubernetes Events collection and forwarding agent
 </p>
 
-<p align="center"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue" />&nbsp;<img alt="Go 1.27 or later" src="https://img.shields.io/badge/go-1.27%2B-00ADD8" />&nbsp;<img alt="Kubernetes 1.27 or later" src="https://img.shields.io/badge/kubernetes-1.27%2B-326CE5" /></p>
+<p align="center"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue" />&nbsp;<img alt="Go 1.27 or later" src="https://img.shields.io/badge/Go-1.27%2B-00ADD8" />&nbsp;<img alt="Kubernetes 1.27 or later" src="https://img.shields.io/badge/Kubernetes-1.27%2B-326CE5" />&nbsp;<a href="https://artifacthub.io/packages/search?repo=kem-agent"><img alt="Artifact Hub" src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kem-agent" /></a></p>
 
 ---
 
