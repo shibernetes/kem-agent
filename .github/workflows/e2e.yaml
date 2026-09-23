@@ -15,10 +15,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # See the identical job in ci.yaml. A workflow cannot read another's outputs,
+  # so the gate is repeated here, under its own check name.
+  changes:
+    name: Changes (E2E)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # dorny/paths-filter reads the pull request's changed files
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Filter paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          filters: |
+            code:
+              - '**'
+              - '!.github/**'
+
   chart-install:
     name: Chart install
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     env:
       # renovate: datasource=github-releases depName=helm/helm
       HELM_VERSION: v4.3.0

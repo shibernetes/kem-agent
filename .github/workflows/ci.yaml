@@ -19,9 +19,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Skip costly jobs for changes that edit only the files in .github/.
+  # It applies to pull requests only since a push would diff the default
+  # branch against itself, and the release workflow must never skip its jobs.
+  changes:
+    name: Changes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # dorny/paths-filter reads the pull request's changed files
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - name: Filter paths
+        id: filter
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # A filter of negated patterns alone never matches, so the catch-all
+          # pattern is declared first and the exclusion narrows it.
+          filters: |
+            code:
+              - '**'
+              - '!.github/**'
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -122,6 +148,8 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -146,6 +174,8 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -167,6 +197,8 @@ jobs:
   chart:
     name: Chart
     runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     env:
       # renovate: datasource=github-releases depName=helm/helm
       HELM_VERSION: v4.3.0
@@ -195,6 +227,8 @@ jobs:
   snapshot:
     name: Release snapshot
     runs-on: ubuntu-latest
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.code == 'true'
     env:
       # renovate: datasource=github-releases depName=goreleaser/goreleaser
       GORELEASER_VERSION: v2.18.1
