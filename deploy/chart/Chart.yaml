@@ -7,6 +7,7 @@ version: 0.0.0
 appVersion: 0.0.0
 kubeVersion: ">=1.27.0-0"
 home: https://github.com/shibernetes/kem-agent
+icon: https://raw.githubusercontent.com/shibernetes/kem-agent/master/docs/assets/kem-icon-color.svg
 sources:
   - https://github.com/shibernetes/kem-agent
 maintainers:
