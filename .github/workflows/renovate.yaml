@@ -21,6 +21,9 @@ jobs:
     name: Renovate
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # The App's private key is an environment secret, so it is reachable
+    # only from this job and only on the branches the environment allows.
+    environment: renovate
     steps:
       # The installation token is scoped to this repository, outlives the
       # job timeout, and is revoked when the job ends.
