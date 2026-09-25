@@ -13,18 +13,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # A release publishes signed artifacts, so it runs only on a valid tag and
-  # only once the tagged commit has passed CI, whose snapshot job also checks
-  # the version stamping before anything is published.
+  # A release publishes signed artifacts, so it runs only on a valid tag, and
+  # only after the tagged commit passes CI. The CI snapshot job also checks the
+  # version stamping before anything is published.
   guard:
     name: Guard
     runs-on: ubuntu-latest
     steps:
-      - name: Verify tag
-        # goreleaser rejects a tag that is not SemVer too, but later and less clearly.
+      - name: Verify the tag
+        # Fails sooner and more clearly than goreleaser, which also rejects a
+        # tag that isn't SemVer.
         run: |
           if ! grep -Eq '^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\+([0-9a-zA-Z-]+(\.[0-9a-zA-Z-]+)*))?$' <<<"${GITHUB_REF_NAME}"; then
-            echo "::error title=Invalid release tag::${GITHUB_REF_NAME} is not a SemVer tag, vMAJOR.MINOR.PATCH with an optional pre-release and build metadata."
+            echo "::error title=Release tag::The tag ${GITHUB_REF_NAME} isn't a SemVer tag. Use the form vMAJOR.MINOR.PATCH, with an optional pre-release and build metadata."
             exit 1
           fi
 
@@ -33,7 +34,7 @@ jobs:
     needs: guard
     permissions:
       contents: read
-      pull-requests: read # read by the changes job in ci.yaml
+      pull-requests: read # Required by the changes job in ci.yaml
     uses: ./.github/workflows/ci.yaml
 
   release:
@@ -41,9 +42,9 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     permissions:
-      contents: write # goreleaser creates the GitHub release
-      packages: write # goreleaser pushes the images to ghcr.io
-      id-token: write # The OIDC token identifying this workflow, for keyless cosign signing
+      contents: write # Allows goreleaser to create the GitHub release
+      packages: write # Allows goreleaser to push the images to ghcr.io
+      id-token: write # Lets cosign sign keylessly with this workflow's OIDC token
     env:
       # renovate: datasource=github-releases depName=goreleaser/goreleaser
       GORELEASER_VERSION: v2.18.1
@@ -51,7 +52,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # goreleaser needs the full history and tags.
+          # Fetches the full history and tags, which goreleaser needs.
           fetch-depth: 0
           persist-credentials: false
 
@@ -61,7 +62,7 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      # The default docker driver cannot push a multi-platform image.
+      # The default docker driver can't push a multi-platform image.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
@@ -91,8 +92,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # The chart is pushed to ghcr.io beside the image
-      id-token: write # The OIDC token identifying this workflow, for keyless cosign signing
+      packages: write # Lets Helm push the chart to ghcr.io beside the image
+      id-token: write # Lets cosign sign keylessly with this workflow's OIDC token
     env:
       # renovate: datasource=github-releases depName=helm/helm
       HELM_VERSION: v4.3.0
@@ -108,8 +109,8 @@ jobs:
         with:
           version: ${{ env.HELM_VERSION }}
 
-      # Helm falls back to the Docker credentials for a registry, and cosign reads
-      # them too, so one login serves both.
+      # Helm and cosign both read the Docker credentials for a registry, so one
+      # login serves both.
       - name: Log in to ghcr.io
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -122,9 +123,9 @@ jobs:
         with:
           cosign-release: v3.1.3
 
-      # The version and appVersion both come from the tag without the v prefix, which
-      # is also the tag goreleaser uses for the image the chart deploys. The Artifact
-      # Hub annotations are set with them.
+      # The chart version and appVersion are set to the tag without its v prefix,
+      # which is also the image tag that goreleaser pushes. The Artifact Hub
+      # annotations get the same version.
       - name: Package and push the chart
         id: push
         run: |
@@ -142,7 +143,7 @@ jobs:
           echo "$output"
           digest=$(awk '/^Digest:/ {print $2}' <<<"$output")
           if [ -z "$digest" ]; then
-            echo "::error title=Chart push::helm push reported no digest to sign"
+            echo "::error title=Chart push::The helm push command reported no digest, so the chart can't be signed."
             exit 1
           fi
           echo "digest=${digest}" >> "$GITHUB_OUTPUT"

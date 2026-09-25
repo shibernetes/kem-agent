@@ -1,11 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/zizmorcore/zizmor/main/support/zizmor.schema.json
 rules:
-  # The CI workflow produces nothing, its snapshot job neither signs
-  # nor publishes, and the release workflow builds without a cache.
+  # The CI workflow publishes nothing, because its snapshot job doesn't sign
+  # or publish. The release job, which does publish, builds without a cache.
   cache-poisoning:
     ignore:
       - ci.yaml
-  # actionlint does not accept the $/ form of a reusable workflow call.
+  # The release workflow can't use the $/ form to call ci.yaml, because
+  # actionlint rejects it.
   self-repository:
     ignore:
       - release.yaml

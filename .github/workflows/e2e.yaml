@@ -15,14 +15,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # See the identical job in ci.yaml. A workflow cannot read another's outputs,
-  # so the gate is repeated here, under its own check name.
+  # The same job as in ci.yaml. A workflow can't read another workflow's
+  # outputs, so this one repeats the job under its own check name.
   changes:
     name: Changes (E2E)
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read # dorny/paths-filter reads the pull request's changed files
+      pull-requests: read # Allows dorny/paths-filter to read the pull request's changed files
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
@@ -75,7 +75,8 @@ jobs:
       - name: Load the image into the cluster
         run: kind load docker-image "$IMAGE" --name "$CLUSTER"
 
-      # The minimal values declare a stdout pipeline on the release namespace.
+      # The minimal values file declares a stdout pipeline for the release
+      # namespace.
       - name: Install the chart
         run: |
           helm install "$RELEASE" deploy/chart \
@@ -88,8 +89,9 @@ jobs:
             --wait \
             --timeout 3m
 
-      # The event is created once the agent is ready, so it reaches the stdout
-      # sink only if the agent watches its namespace and delivers what it reads.
+      # The probe event is created after the agent is ready. It reaches the
+      # stdout sink only if the agent watches the namespace and delivers what
+      # it reads.
       - name: Verify an event is delivered
         run: |
           note="e2e probe ${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
@@ -119,16 +121,16 @@ jobs:
             fi
             sleep 2
           done
-          echo "::error title=Event delivery::the agent did not deliver the probe event within a minute"
+          echo "::error title=Event delivery::The agent didn't deliver the probe event within a minute."
           exit 1
 
-      - name: Verify the agent did not restart
+      - name: Verify the agent didn't restart
         run: |
           restarts=$(kubectl get pods --namespace "$NAMESPACE" \
             --selector "app.kubernetes.io/instance=$RELEASE" \
             --output 'jsonpath={.items[*].status.containerStatuses[*].restartCount}')
           if [ "$restarts" != "0" ]; then
-            echo "::error title=Agent restarts::the agent container restarted '${restarts}' times"
+            echo "::error title=Agent restarts::The agent container's restart count is '${restarts}', not 0."
             exit 1
           fi
 

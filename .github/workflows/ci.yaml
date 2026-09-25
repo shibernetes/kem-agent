@@ -7,8 +7,8 @@ on:
       - master
   pull_request: {}
 
-  # Called by the release workflow, so a release runs the
-  # same gates before it builds, signs, and publishes.
+  # The release workflow calls this workflow, so a release passes the same
+  # checks before it builds, signs, and publishes.
   workflow_call: {}
 
 permissions:
@@ -19,15 +19,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Skip costly jobs for changes that edit only the files in .github/.
-  # It applies to pull requests only since a push would diff the default
-  # branch against itself, and the release workflow must never skip its jobs.
+  # Lets a pull request that changes only files in .github/ skip the costly
+  # jobs. A push never skips them, because it would diff the default branch
+  # against itself, and the release workflow must always run every job.
   changes:
     name: Changes
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read # dorny/paths-filter reads the pull request's changed files
+      pull-requests: read # Allows dorny/paths-filter to read the pull request's changeset
     outputs:
       code: ${{ steps.filter.outputs.code }}
     steps:
@@ -36,8 +36,8 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
         with:
-          # A filter of negated patterns alone never matches, so the catch-all
-          # pattern is declared first and the exclusion narrows it.
+          # A filter with only negated patterns never matches, so the catch-all
+          # pattern comes first and the exclusion narrows it.
           filters: |
             code:
               - '**'
@@ -59,8 +59,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-          # go.mod is hashed alongside go.sum so the key resolves before
-          # the first dependency lands, and moves when a version bumps.
+          # Hashing go.mod as well as go.sum gives the cache a key before the
+          # module has any dependency, and a new key when a version changes.
           cache-dependency-path: |
             go.mod
             **/go.sum
@@ -70,19 +70,19 @@ jobs:
           go mod tidy
           if [ -n "$(git status --porcelain -- go.mod go.sum)" ]; then
             git status --short -- go.mod go.sum
-            echo "::error::go.mod / go.sum are not tidy. Run 'go mod tidy' and commit the result."
+            echo "::error title=Module tidiness::The go.mod and go.sum files aren't tidy. Run 'go mod tidy' and commit the result."
             exit 1
           fi
 
       - name: Vet
         run: go vet ./...
 
-      - name: golangci-lint
+      - name: Run golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
           version: v2.13.2
 
-      - name: Run nilaway linter
+      - name: Run nilaway
         run: |
           go install go.uber.org/nilaway/cmd/nilaway@v0.0.0-20260808063849-8649a03c818a
           nilaway -include-pkgs=github.com/shibernetes/kem-agent ./...
@@ -93,7 +93,7 @@ jobs:
     env:
       # renovate: datasource=github-releases depName=j178/prek extractVersion=^v(?<version>.+)$
       PREK_CLI_VERSION: 0.5.2
-      # The Secrets job scans the whole history instead.
+      # Skips the gitleaks hook, because the Secrets job scans the whole history.
       SKIP: gitleaks
     steps:
       - name: Checkout
@@ -111,8 +111,8 @@ jobs:
             **/go.sum
 
       # Runs every hook in .pre-commit-config.yaml over the whole tree, the
-      # same checks a commit runs locally. A hook that modifies a file fails
-      # the job, which is how a stale config schema is caught.
+      # same checks that run on a local commit. A hook that modifies a file
+      # fails the job, which is how the CI catches a stale config schema.
       - name: Run hooks
         uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
         with:
@@ -128,8 +128,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # The whole history is scanned, so a secret committed without
-          # the hook is found as well.
+          # Fetches the whole history, so the scan also finds a secret that was
+          # committed without the hook.
           fetch-depth: 0
           persist-credentials: false
 
@@ -214,8 +214,8 @@ jobs:
           version: ${{ env.HELM_VERSION }}
 
       # The default values declare no pipeline, so each file under ci/ declares
-      # one and switches on a different set of optional templates. Lint skips
-      # the chart's own fail and required checks, so each file is also templated.
+      # one and turns on a different set of optional templates. Lint skips the
+      # chart's own fail and required checks, so the job also renders each file.
       - name: Lint and render
         run: |
           helm lint --strict deploy/chart
@@ -236,7 +236,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # goreleaser needs the full history and tags.
+          # Fetches the full history and tags, which goreleaser needs.
           fetch-depth: 0
           persist-credentials: false
 
@@ -253,7 +253,7 @@ jobs:
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
       # A snapshot builds the archives and one local image per platform,
-      # and neither signs nor publishes anything.
+      # but doesn't sign or publish anything.
       - name: Build release snapshot
         uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
         with:
@@ -261,8 +261,8 @@ jobs:
           args: release --snapshot --clean --skip=sign
 
       # A renamed package or variable silently breaks the -X flags, and no test
-      # can see it. It is checked here because the release workflow reuses this
-      # one before it publishes anything.
+      # can catch it. The check runs here because the release workflow calls
+      # this workflow before it publishes anything.
       - name: Verify version stamping
         run: |
           bin=$(jq -r '.[] | select(.type == "Binary" and .goos == "linux" and .goarch == "amd64") | .path' dist/artifacts.json)
@@ -271,6 +271,6 @@ jobs:
           out=$("$bin" version)
           echo "$out"
           if ! grep -q " has version ${tag} built " <<<"$out" || ! grep -q " from ${commit::7} on " <<<"$out"; then
-            echo "::error title=Version stamping::the release binary does not report tag ${tag} and commit ${commit::7}"
+            echo "::error title=Build ldflags::The release binary doesn't report tag ${tag} and commit ${commit::7}. Check the -X flags in .goreleaser.yaml."
             exit 1
           fi

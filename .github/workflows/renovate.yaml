@@ -3,13 +3,16 @@ name: Renovate
 
 on:
   schedule:
-    # Monday's run for the routine updates.
+    # Runs daily. On Mondays, this run falls inside the schedule in
+    # renovate.json and opens the routine updates.
     - cron: "16 6 * * *"
-    # Twelve hours apart, for security fixes
+    # A second run twelve hours later, for security fixes, which ignore
+    # that schedule.
     - cron: "16 18 * * *"
   workflow_dispatch: {}
 
-# Renovate authenticates as the GitHub App, so the job token needs nothing.
+# Renovate authenticates as the GitHub App, so the job token needs no
+# permissions.
 permissions: {}
 
 concurrency:
@@ -21,12 +24,12 @@ jobs:
     name: Renovate
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # The App's private key is an environment secret, so it is reachable
-    # only from this job and only on the branches the environment allows.
+    # The App's private key is an environment secret, so only this job can read
+    # it, and only on the branches that the environment allows.
     environment: renovate
     steps:
-      # The installation token is scoped to this repository, outlives the
-      # job timeout, and is revoked when the job ends.
+      # The installation token is scoped to this repository. It lasts longer than
+      # the job timeout, and is revoked when the job ends.
       - name: Create the App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
