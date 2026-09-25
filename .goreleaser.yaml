@@ -62,6 +62,15 @@ dockers_v2:
       org.opencontainers.image.revision: "{{ .FullCommit }}"
       org.opencontainers.image.created: "{{ .Date }}"
       org.opencontainers.image.base.name: gcr.io/distroless/static:nonroot
+    annotations:
+      org.opencontainers.image.title: kem-agent
+      org.opencontainers.image.description: Kubernetes Events collection and forwarding agent
+      org.opencontainers.image.source: https://github.com/shibernetes/kem-agent
+      org.opencontainers.image.licenses: MIT
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.revision: "{{ .FullCommit }}"
+      org.opencontainers.image.created: "{{ .Date }}"
+      org.opencontainers.image.base.name: gcr.io/distroless/static:nonroot
 
 # A keyless cosign signature of the checksum file, which covers every archive.
 # The sigstore bundle is uploaded to the GitHub release. Verify it with the
