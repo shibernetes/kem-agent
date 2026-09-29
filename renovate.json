@@ -70,6 +70,13 @@
             "allowedVersions": "/^v?0\\.37\\./"
         },
         {
+            "description": "Disable automatic cel-go updates. From v0.32.0 its module path is cel.dev/cel-go, while the CEL libraries of k8s.io/apiserver that the filters use still import github.com/google/cel-go. A vulnerability alert still re-enables it.",
+            "matchPackageNames": [
+                "github.com/google/cel-go"
+            ],
+            "enabled": false
+        },
+        {
             "description": "A KinD node image is built for one kind release, so the KinD version in the e2e workflow and the node image tag in .kind.yaml are updated together.",
             "matchDepNames": [
                 "kubernetes-sigs/kind",
