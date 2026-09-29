@@ -2,7 +2,7 @@ apiVersion: v2
 name: kem-agent
 description: Kubernetes Events collection and forwarding agent
 type: application
-# Both versions set from the release tag by the release workflow.
+# Both versions are set from the release tag by the release workflow.
 version: 0.0.0
 appVersion: 0.0.0
 kubeVersion: ">=1.27.0-0"
@@ -23,7 +23,6 @@ annotations:
   artifacthub.io/links: |
     - name: support
       url: https://github.com/shibernetes/kem-agent/issues
-  # Set from the release tag by the release workflow, like the versions.
   artifacthub.io/images: |
     - name: kem-agent
       image: ghcr.io/shibernetes/kem-agent:0.0.0

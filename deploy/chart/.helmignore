@@ -9,7 +9,7 @@
 *.tmp
 *.orig
 *~
-# Values for the CI lint runs.
+# Values files used only by CI.
 ci/
-# The template helm-docs renders README.md from.
+# The helm-docs template for README.md.
 README.md.gotmpl

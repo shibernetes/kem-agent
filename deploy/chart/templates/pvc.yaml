@@ -7,8 +7,8 @@ metadata:
   labels:
     {{- include "kem-agent.labels" . | nindent 4 }}
   annotations:
-    # The volume outlives an uninstall, so a checkpoint written to it survives
-    # a reinstall of the release.
+    # Helm keeps the claim on uninstall, so a checkpoint written to the volume
+    # survives a reinstall of the release.
     helm.sh/resource-policy: keep
 spec:
   accessModes:

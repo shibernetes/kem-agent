@@ -1,40 +1,44 @@
 {{- $fullname := include "kem-agent.fullname" . }}
 {{- $port := include "kem-agent.httpPort" . }}
 {{- $rbac := include "kem-agent.rbac" . | fromJson -}}
-{{ .Chart.Name }} {{ .Chart.AppVersion }} is deployed as {{ $fullname }} in namespace {{ .Release.Namespace }}, and watches
+Version {{ .Chart.AppVersion }} of {{ .Chart.Name }} is deployed as {{ $fullname }} in namespace {{ .Release.Namespace }}, and configured to watch
 {{- if eq $rbac.scope "cluster" }} all namespaces.
 {{- else if eq $rbac.scope "single" }} namespace {{ first $rbac.namespaces }}.
 {{- else }} namespaces {{ join ", " $rbac.namespaces }}.
 {{- end }}
 
-Follow the agent logs with:
+To follow the agent logs, run this command:
 
   kubectl logs -n {{ .Release.Namespace }} deploy/{{ $fullname }} -f
 
-Inspect the metrics with:
+To check the metrics, forward the HTTP port and query /metrics:
 
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ $fullname }} {{ $port }}
   curl localhost:{{ $port }}/metrics
 {{- if dig "service" "hot_reload" false .Values.config }}
 
-Hot reload is enabled, so a configuration change does not restart the pod.
-Filter changes apply in place, and any other change takes effect after:
+Hot reload is enabled, so a configuration change doesn't restart the pod. Filter
+changes apply to the running agent, but other changes take effect only after a
+restart of the Deployment.
 
   kubectl rollout restart -n {{ .Release.Namespace }} deploy/{{ $fullname }}
 {{- end }}
 {{- if .Values.persistence.enabled }}
 {{- if not .Values.persistence.existingClaim }}
 
-The {{ $fullname }} PersistentVolumeClaim is kept on uninstall, so its data
-survives a reinstall. Delete it manually to discard that data.
+Helm keeps the {{ $fullname }} PersistentVolumeClaim when you uninstall the
+release, so its content survives a reinstall. To discard the data, delete the
+PersistentVolumeClaim after you uninstall.
 {{- end }}
 {{- else if eq (toString (dig "checkpoint" "store" "type" "" .Values.config)) "file" }}
 
-WARNING: the checkpoint uses a file store while persistence is disabled. The
-root filesystem is read-only, so unless extraVolumeMounts puts a volume at
-config.checkpoint.store.path, the agent cannot save the checkpoint and every
-start replays the retained events.
-To keep it across restarts, set persistence.enabled=true, which mounts a volume
-at {{ .Values.persistence.mountPath }}, and set config.checkpoint.store.path to
-point inside it.
+WARNING: The checkpoint uses a file store, but persistence is off.
+
+The root filesystem is read-only, so the agent can't save the checkpoint
+unless config.checkpoint.store.path is set to a path on a volume mounted
+with extraVolumeMounts. Without a saved checkpoint, every start replays all
+retained events.
+
+To keep the checkpoint across restarts, set persistence.enabled=true and set
+config.checkpoint.store.path to a path under {{ .Values.persistence.mountPath }}.
 {{- end }}

@@ -1,21 +1,16 @@
 image:
-  # -- Image repository
+  # -- Agent image repository
   repository: ghcr.io/shibernetes/kem-agent
-  # -- Image tag, defaults to the chart appVersion when empty
+  # -- Image tag. Defaults to the chart's `appVersion`
   tag: ""
-  # -- Image digest, pinned alongside the tag when set
+  # -- Image digest. When set, the image is pulled as `<repository>:<tag>@<digest>`
   digest: ""
   # -- Image pull policy
   pullPolicy: IfNotPresent
 
-# -- The agent configuration, rendered into the mounted config file.
-#
-# It passes through untouched apart from three things:
-#  - an empty `source.watches` watches the release namespace
-#  - a ConfigMap checkpoint store with no name uses `<fullname>-checkpoint`
-#  - `source.enrichment.resources` entries are objects whose `name` is rendered
-#
-# The chart does not render until at least one pipeline is declared.
+# -- Agent configuration, mounted in the agent pod from a ConfigMap. It must
+# declare at least one pipeline. See [Configuration](#configuration) for what
+# the chart fills in
 # @default -- See values.yaml
 config:
   service:
@@ -24,8 +19,9 @@ config:
   source:
     watches: []
     # enrichment:
-    #   # Each entry names a resource, and marks it cluster-scoped when it is,
-    #   # which Helm cannot discover itself and the RBAC depends on.
+    #   # Each entry names a resource. Add `clusterScoped: true` to a
+    #   # cluster-scoped resource, because Helm can't look up a resource's scope
+    #   # and the chart needs it to create the roles.
     #   resources:
     #     - name: deployments.apps
     #     - name: nodes
@@ -33,7 +29,7 @@ config:
   checkpoint:
     store:
       type: configmap
-  # Every event of the watched namespaces, written to stdout:
+  # This example sends every event from the watched namespaces to stdout.
   # sinks:
   #   console:
   #     type: stdout
@@ -42,25 +38,26 @@ config:
   #     sinks:
   #       - console
 
-# -- Restart the pod when the rendered config changes, through a
-# `checksum/config` pod annotation. The annotation is left out when
-# `config.service.hot_reload` is set to true, since it would restart
-# the pod on every change and hot reload would never run.
+# -- Restart the agent pod when `config` changes, using a `checksum/config` pod
+# annotation. It has no effect when `config.service.hot_reload` is `true`, so that
+# filter changes apply without a restart
 restartOnConfigChange: true
 
-# -- Seconds the pod gets to stop. It must cover `config.service.shutdown_timeout`
-# with headroom: the 30-second default plus 30 seconds.
+# -- Seconds the agent pod has to shut down before it's killed. Set it higher
+# than `config.service.shutdown_timeout`, which defaults to `30s`
 terminationGracePeriodSeconds: 60
 
 startupProbe:
-  # -- Seconds between the startup probes of `/readyz`
+  # -- How often the startup probe checks `/readyz`, in seconds
   periodSeconds: 5
-  # -- Failed startup probes before the pod restarts. Times periodSeconds, it
-  # must cover `config.source.enrichment.sync_timeout` with a margin: 5 × 18 is
-  # 90 seconds, the 1-minute default plus 30 seconds.
+  # -- Failed startup probes allowed before the container is restarted.
+  # `periodSeconds` × `failureThreshold` must be longer than
+  # `config.source.enrichment.sync_timeout`, which defaults to `1m`. The
+  # defaults allow 90 seconds
   failureThreshold: 18
 
-# -- Pod security context. The numeric user matches the one the image runs as.
+# -- Security context for the agent pod. The user ID matches the image's
+# nonroot user
 podSecurityContext:
   runAsNonRoot: true
   runAsUser: 65532
@@ -68,7 +65,7 @@ podSecurityContext:
   seccompProfile:
     type: RuntimeDefault
 
-# -- Container security context
+# -- Security context for the agent container
 securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
@@ -76,7 +73,7 @@ securityContext:
     drop:
       - ALL
 
-# -- Resource requests and limits.
+# -- Resource requests and limits for the agent container
 resources:
   requests:
     cpu: 100m
@@ -85,90 +82,93 @@ resources:
     memory: 512Mi
 
 serviceAccount:
-  # -- Create the ServiceAccount the pod runs as
+  # -- Create a ServiceAccount for the agent pod
   create: true
-  # -- ServiceAccount name. Defaults to the fullname, or to the namespace's
-  # `default` account when `create` is false.
+  # -- ServiceAccount name. Defaults to the chart's fullname, or to `default`
+  # when `create` is `false`
   name: ""
-  # -- ServiceAccount annotations
+  # -- Annotations for the ServiceAccount
   annotations: {}
 
 rbac:
-  # -- Create RBAC resources, inferred from `config`
+  # -- Create the roles and role bindings the agent needs, based on `config`.
+  # See [RBAC](#rbac)
   create: true
 
 persistence:
-  # -- Mount a PersistentVolumeClaim, which a `file` checkpoint store or a `file`
-  # sink writes to. The chart rewrites no path, so point those paths into `mountPath`.
+  # -- Mount a PersistentVolumeClaim for a `file` checkpoint store or a `file`
+  # sink. The chart doesn't rewrite their paths, so point them under `mountPath`
   enabled: false
-  # -- Where the volume is mounted in the agent container
+  # -- Path where the volume is mounted in the agent container
   mountPath: /var/lib/kem-agent
-  # -- Name of an existing PersistentVolumeClaim to mount rather than provisioning one
+  # -- Existing PersistentVolumeClaim to use instead of creating one
   existingClaim: ""
-  # -- Size of the provisioned volume
+  # -- Size of the PersistentVolumeClaim the chart creates
   size: 1Gi
-  # -- Storage class of the provisioned volume, the cluster default when empty
+  # -- Storage class of the PersistentVolumeClaim. Uses the cluster default
+  # when empty
   storageClassName: ""
-  # -- Access modes of the provisioned volume
+  # -- Access modes of the PersistentVolumeClaim
   accessModes:
     - ReadWriteOnce
 
 service:
-  # -- Service annotations
+  # -- Annotations for the Service
   annotations: {}
 
 serviceMonitor:
-  # -- Create a Prometheus Operator ServiceMonitor scraping `/metrics`
+  # -- Create a Prometheus Operator ServiceMonitor that scrapes `/metrics`
   enabled: false
-  # -- Scrape interval, the Prometheus default when empty
+  # -- Scrape interval. Uses the Prometheus default when empty
   interval: 30s
-  # -- Scrape timeout, the Prometheus default when empty
+  # -- Scrape timeout. Uses the Prometheus default when empty
   scrapeTimeout: 10s
-  # -- Extra labels, such as the ones a Prometheus instance selects ServiceMonitors by
+  # -- Extra labels for the ServiceMonitor, such as the ones your Prometheus
+  # uses to select it
   labels: {}
 
-# -- Pod annotations
+# -- Extra annotations for the agent pod
 podAnnotations: {}
 
-# -- Pod labels
+# -- Extra labels for the agent pod
 podLabels: {}
 
-# -- Image pull secrets
+# -- Secrets for pulling the image from a private registry
 imagePullSecrets: []
 
-# -- Priority class of the pod
+# -- Priority class for the agent pod
 priorityClassName: ""
 
-# -- Extra environment variables.
-# The agent replaces each `${VAR}` reference in `config` with the value of that
-# variable when it loads the configuration.
+# -- Extra environment variables for the agent container. When the agent loads
+# its configuration, it replaces each `${VAR}` reference in `config` with the
+# value of that variable
 env: []
 
-# -- Extra environment sources, whole ConfigMaps or Secrets
+# -- ConfigMaps or Secrets to load environment variables from
 envFrom: []
 
-# -- Extra pod volumes, mounted through `extraVolumeMounts`
+# -- Extra volumes for the agent pod. Mount them with `extraVolumeMounts`
 extraVolumes: []
 
-# -- Extra volume mounts of the agent container, such as TLS files a sink reads
+# -- Extra volume mounts for the agent container, such as TLS files used by a sink
 extraVolumeMounts: []
 
-# -- Node selector
+# -- Node selector for the agent pod
 nodeSelector: {}
 
-# -- Tolerations
+# -- Tolerations for the agent pod
 tolerations: []
 
-# -- Affinity rules
+# -- Affinity rules for the agent pod
 affinity: {}
 
-# -- Extra manifests rendered beside the chart's own, such as custom RBAC. Each
-# entry, an object or a string, is rendered through `tpl`, so it can use chart
-# variables and helpers.
+# -- Extra manifests to deploy with the release, such as custom RBAC resources.
+# Entries can be objects or strings. They're rendered with `tpl`, so they can use
+# chart values and named templates
 extraObjects: []
 
 # -- Override the chart name
 nameOverride: ""
 
-# -- Override the fully qualified release name
+# -- Override the fullname used to name every object
 fullnameOverride: ""

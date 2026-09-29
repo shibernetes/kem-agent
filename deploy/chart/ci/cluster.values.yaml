@@ -1,4 +1,5 @@
-# A cluster-wide watch with hot reload enabled, which drops the checksum annotation.
+# A single watch for all namespaces with hot reload turned on,
+# so the chart leaves out the checksum annotation.
 config:
   service:
     hot_reload: true

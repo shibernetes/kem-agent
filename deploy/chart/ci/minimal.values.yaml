@@ -1,4 +1,5 @@
-# The smallest working install: one stdout pipeline over the release namespace.
+# The smallest working install, with one stdout pipeline for
+# the release namespace.
 config:
   sinks:
     console:

@@ -1,12 +1,12 @@
 {{/*
-The chart name.
+Returns the chart name.
 */}}
 {{- define "kem-agent.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
-The fully qualified release name, used to name every object.
+Returns the fullname, which names every object the chart creates.
 */}}
 {{- define "kem-agent.fullname" -}}
 {{- if .Values.fullnameOverride }}
@@ -22,7 +22,7 @@ The fully qualified release name, used to name every object.
 {{- end }}
 
 {{/*
-The labels set on every object.
+Returns the labels set on every object.
 */}}
 {{- define "kem-agent.labels" -}}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
@@ -32,7 +32,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
 {{/*
-The labels selecting the agent pod.
+Returns the labels that select the agent pod.
 */}}
 {{- define "kem-agent.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "kem-agent.name" . }}
@@ -40,14 +40,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-The agent configuration as the mounted file holds it. The values are copied
-and filled in place, and never passed through tpl, so a {{ }} in the config,
-such as a webhook template, reaches the agent as written.
+Renders the agent configuration file from the config value, with the chart's
+defaults filled in. The ConfigMap, the config checksum, and the RBAC inputs are
+all built from it, so they see the same configuration. The config is never
+templated with tpl, so a {{ }} block, such as a webhook template, is written
+to the file exactly as it appears in the values.
 */}}
 {{- define "kem-agent.config" -}}
 {{- $cfg := deepCopy (required "config is required" .Values.config) }}
 {{- if not $cfg.pipelines }}
-{{- fail "config.pipelines is empty: declare at least one pipeline, as the example in values.yaml shows" }}
+{{- fail "config.pipelines must declare at least one pipeline, like the commented example in values.yaml" }}
 {{- end }}
 {{- $source := default dict $cfg.source }}
 {{- if not $source.watches }}
@@ -58,7 +60,7 @@ such as a webhook template, reaches the agent as written.
 {{- $names := list }}
 {{- range $i, $r := $enrichment.resources }}
 {{- if not (and (kindIs "map" $r) $r.name) }}
-{{- fail (printf "config.source.enrichment.resources[%d] must be an object with a name" $i) }}
+{{- fail (printf "config.source.enrichment.resources[%d] must be an object with a name, such as {name: deployments.apps}" $i) }}
 {{- end }}
 {{- $names = append $names $r.name }}
 {{- end }}
@@ -73,8 +75,8 @@ such as a webhook template, reaches the agent as written.
 {{- end }}
 
 {{/*
-The agent image, tagged with the chart appVersion unless a tag is set, and
-pinned to a digest when one is.
+Returns the agent image reference. The tag defaults to the chart appVersion,
+and the digest is appended when one is set.
 */}}
 {{- define "kem-agent.image" -}}
 {{- $ref := printf "%s:%s" .Values.image.repository (default .Chart.AppVersion .Values.image.tag) }}
@@ -85,19 +87,19 @@ pinned to a digest when one is.
 {{- end }}
 
 {{/*
-The port of a listen address such as :8080 or 0.0.0.0:8080. The render fails
-when the address has no port a container can expose.
+Returns the port of a listen address, such as :8080 or 0.0.0.0:8080.
+Rendering fails when the address has no port that a container can expose.
 */}}
 {{- define "kem-agent.port" -}}
 {{- $port := regexFind "[0-9]+$" . | default "0" | int }}
 {{- if not (and (regexMatch ":[0-9]+$" .) (le 1 $port) (le $port 65535)) }}
-{{- fail (printf "listen address %q needs a port between 1 and 65535" .) }}
+{{- fail (printf "listen address %q must end with a port in range [1-65535]" .) }}
 {{- end }}
 {{- $port }}
 {{- end }}
 
 {{/*
-The port the agent serves its probes and metrics on, read from its HTTP listen
+Returns the port that serves the agent's probes and metrics, read from its HTTP listen
 address.
 */}}
 {{- define "kem-agent.httpPort" -}}
@@ -105,9 +107,9 @@ address.
 {{- end }}
 
 {{/*
-The ServiceAccount the pod runs as. It uses the name set in the values, otherwise
-either the fullname when the chart creates it, or the namespace's default one when
-it does not.
+Returns the ServiceAccount that the pod runs as. A name set in the values takes
+precedence. Otherwise, it's the fullname when the chart creates the account, or
+the namespace's default account when it doesn't.
 */}}
 {{- define "kem-agent.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
@@ -118,9 +120,9 @@ it does not.
 {{- end }}
 
 {{/*
-The RBAC inputs derived from the rendered configuration, as JSON: watch scope
-and namespaces, enrichment resources by scope, and the ConfigMap checkpoint
-store.
+Returns the RBAC template parameters derived from the rendered configuration, as JSON.
+The parameters are the watch scope and its namespaces, the enrichment resources split
+by scope, and the ConfigMap checkpoint store.
 */}}
 {{- define "kem-agent.rbac" -}}
 {{- $cfg := include "kem-agent.config" . | fromYaml }}
@@ -128,7 +130,7 @@ store.
 {{- $namespaces := list }}
 {{- range $i, $w := $cfg.source.watches }}
 {{- if not (kindIs "map" $w) }}
-{{- fail (printf "config.source.watches[%d] must be an object" $i) }}
+{{- fail (printf "config.source.watches[%d] must be an object, such as {namespace: team-a}" $i) }}
 {{- end }}
 {{- if $w.namespace }}
 {{- $namespaces = append $namespaces (toString $w.namespace) }}

@@ -1,5 +1,6 @@
-# Every optional template at once: two watched namespaces with enrichment, a file
-# checkpoint store on a persistent volume, a ServiceMonitor and an extra object.
+# Every optional template at once. It watches two namespaces with enrichment
+# enabled, stores the checkpoint in a file on a persistent volume, and adds a
+# ServiceMonitor and an extra object.
 config:
   source:
     watches:

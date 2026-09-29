@@ -7,9 +7,9 @@ metadata:
     {{- include "kem-agent.labels" . | nindent 4 }}
 spec:
   replicas: 1
-  # The old pod needs to stop before its replacement starts, so the final
-  # checkpoint save lands before the new pod resumes from it, and two pods
-  # never write to the data volume at once.
+  # The old pod must stop before its replacement starts. That way, the new pod
+  # resumes from the old pod's final checkpoint, and only one pod writes to the
+  # data volume at a time.
   strategy:
     type: Recreate
   selector:
@@ -80,8 +80,8 @@ spec:
           envFrom:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          # Liveness and readiness start once the startup probe passes,
-          # which /readyz does after the informer caches have synced.
+          # The startup probe passes once the informer caches have synced,
+          # and the liveness and readiness probes start only after that.
           startupProbe:
             httpGet:
               path: /readyz
