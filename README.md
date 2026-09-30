@@ -183,7 +183,7 @@ checkpoint:
 
 ## Monitoring
 
-The agent serves Prometheus metrics on `/metrics`, and liveness and readiness checks on `/healthz` and `/readyz`, all on `service.http_server.addr` (`:8080` by default).
+The agent serves Prometheus metrics at `/metrics` on `service.metrics_server.addr`, which defaults to `:8080`. It serves the liveness and readiness checks at `/healthz` and `/readyz` on a separate address, `service.http_server.addr`, which defaults to `:8081`.
 
 To find out whether events are lost, check the `kem_agent_events_dropped_total` metric. Its `stage` and `reason` labels say where and why each event was dropped. When you deploy with the Helm chart, set `serviceMonitor.enabled` to `true` to create a Prometheus Operator [ServiceMonitor](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitor), as described in [Metrics](deploy/chart/README.md#metrics).
 

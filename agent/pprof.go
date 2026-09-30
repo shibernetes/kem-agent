@@ -1,13 +1,10 @@
 package agent
 
 import (
-	"context"
 	"encoding/json/jsontext"
 	"encoding/json/v2"
-	"fmt"
 	"log/slog"
 	"math"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"runtime"
@@ -26,13 +23,6 @@ const (
 )
 
 func newPprofServer(addr string, logger *slog.Logger) (*httpServer, error) {
-	const name = "pprof"
-
-	var lc net.ListenConfig
-	ln, err := lc.Listen(context.Background(), "tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to listen on %q: %w", addr, err)
-	}
 	// The block and mutex profilers are off by default.
 	runtime.SetBlockProfileRate(blockProfileRate)
 	runtime.SetMutexProfileFraction(mutexProfileFraction)
@@ -48,21 +38,10 @@ func newPprofServer(addr string, logger *slog.Logger) (*httpServer, error) {
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 	mux.HandleFunc("/debug/memory", memoryStatsHandler)
 
-	// Do not set WriteTimeout, because a CPU or trace profile legitimately
-	// streams for its whole duration (/debug/pprof/profile?seconds=N),
-	// which a shorter write deadline would cut off.
-	// IdleTimeout still reaps idle keep-alive connections.
-	return &httpServer{
-		srv: &http.Server{
-			Handler:           mux,
-			ReadHeaderTimeout: serverReadHeaderTimeout,
-			ReadTimeout:       serverReadTimeout,
-			IdleTimeout:       serverIdleTimeout,
-		},
-		ln:   ln,
-		log:  logger.With(slog.String("component", name)),
-		name: name,
-	}, nil
+	// A CPU or trace profile, such as /debug/pprof/profile?seconds=N,
+	// streams for its whole duration, so we don't set a write timeout
+	// that would cut it off.
+	return listenHTTP("pprof", addr, mux, 0, logger)
 }
 
 func memoryStatsHandler(w http.ResponseWriter, _ *http.Request) {

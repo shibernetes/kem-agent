@@ -2,7 +2,7 @@
 // The schema is intended as an authoring aid for editors and for the chart
 // values, and is never loaded by the agent to validate the configuration.
 //
-// It runs from the config package, through a go:generate directive.
+// It is invoked from the config package, through a go:generate directive.
 package main
 
 import (

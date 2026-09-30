@@ -270,8 +270,11 @@ config:
 
 ### Metrics
 
-The agent serves Prometheus metrics on `/metrics`. With the Prometheus
-Operator, set `serviceMonitor.enabled` to `true` to create a
+The agent serves Prometheus metrics on `/metrics`, on the port that
+`config.service.metrics_server.addr` sets. The chart's Service exposes only
+that port, since the kubelet reaches the probes directly via the pod IP.
+
+With the Prometheus Operator, set `serviceMonitor.enabled` to `true` to create a
 [ServiceMonitor](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitor),
 and optionally set `serviceMonitor.labels` with the labels that your Prometheus
 `serviceMonitorSelector` matches.
@@ -363,9 +366,10 @@ Memory usage grows with the number of sinks and with the following factors. Set
 The chart runs the agent as the nonroot user `65532`, with a read-only root
 filesystem and all capabilities dropped. Also keep the following in mind:
 
-- The HTTP port serves `/metrics`, the health probes, and `POST /reload`
-  without authentication, and the chart's Service exposes it inside the
-  cluster. To limit who can reach it, add a
+- The metrics port, and the HTTP port that serves the health probes and
+  `POST /reload`, accept requests without authentication. The chart's Service
+  exposes only the metrics port, but any pod in the cluster can reach both through
+  the pod IP. To limit who can reach them, add a
   [NetworkPolicy](https://kubernetes.io/docs/concepts/services-networking/network-policies/),
   for example through `extraObjects`.
 - Credentials belong in a Secret rather than in `config`, as shown in
@@ -399,7 +403,7 @@ filesystem and all capabilities dropped. Also keep the following in mind:
 | persistence.size | string | `"1Gi"` | Size of the PersistentVolumeClaim the chart creates |
 | persistence.storageClassName | string | `""` | Storage class of the PersistentVolumeClaim. Uses the cluster default when empty |
 | persistence.accessModes | list | `["ReadWriteOnce"]` | Access modes of the PersistentVolumeClaim |
-| service.annotations | object | `{}` | Annotations for the Service |
+| service.annotations | object | `{}` | Annotations for the Service, which exposes the metrics port |
 | serviceMonitor.enabled | bool | `false` | Create a Prometheus Operator ServiceMonitor that scrapes `/metrics` |
 | serviceMonitor.interval | string | `"30s"` | Scrape interval. Uses the Prometheus default when empty |
 | serviceMonitor.scrapeTimeout | string | `"10s"` | Scrape timeout. Uses the Prometheus default when empty |

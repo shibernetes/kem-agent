@@ -5,6 +5,7 @@
 !go.mod
 !go.sum
 !**/*.go
-# Hidden files and directories are excluded at any depth, even when they hold Go files.
+
+# Hidden files and directories are excluded at any depth, even when they contain Go files.
 **/.*
 **/.*/**

@@ -44,8 +44,7 @@ type Agent struct {
 	filterEnv    *filter.Env
 	checkpointer *checkpoint.Checkpointer
 	log          *slog.Logger
-	server       *httpServer
-	pprof        *httpServer
+	servers      []*httpServer
 	enricher     source.Enricher
 	source       *source.Source
 	stopWatches  context.CancelFunc

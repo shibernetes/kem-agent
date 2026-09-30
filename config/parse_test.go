@@ -51,6 +51,7 @@ func TestParseRejectsConfig(t *testing.T) {
 		"narrowing every namespace":  {fixture: "narrowed-all-namespaces", want: "cannot be narrowed"},
 		"one metric on two sinks":    {fixture: "duplicate-metric", want: "already exposed by sink"},
 		"pprof address with no port": {fixture: "pprof-addr", want: "pprof_server: invalid addr"},
+		"probes on the metrics port": {fixture: "port-conflict", want: `http_server: addr ":8080" uses the same port as metrics_server.addr ":8080"`},
 		"unselectable event field":   {fixture: "bad-field-selector", want: "not one of the selectable event fields"},
 		"save interval of zero":      {fixture: "bad-save-interval", want: "save_interval must be positive"},
 		"store name with a space":    {fixture: "bad-store-name", want: `invalid name "Kem Agent"`},
@@ -111,6 +112,7 @@ func TestParseFailureFieldPath(t *testing.T) {
 		"checkpoint tick":   {fixture: "bad-save-interval", want: "$.checkpoint.save_interval"},
 		"store name":        {fixture: "bad-store-name", want: "$.checkpoint.store.name"},
 		"pprof address":     {fixture: "pprof-addr", want: "$.service.pprof_server.addr"},
+		"clashing port":     {fixture: "port-conflict", want: "$.service.http_server.addr"},
 		"sink declaration":  {fixture: "sink-no-value", want: "$.sinks.spare"},
 		"unreferenced sink": {fixture: "unreferenced-sink", want: "$.sinks.spare"},
 	}

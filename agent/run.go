@@ -105,46 +105,49 @@ func (a *Agent) start(ctx context.Context) error {
 	return nil
 }
 
-// serve binds the local HTTP server, and the pprof server when an address
-// is configured for it. They are started before any phase that can block,
-// so the probes are up while a slow sync runs.
+// serve binds the agent and metrics servers, and the pprof server when an
+// address is configured for it. They start before any phase that can block,
+// so the probes answer while a slow informer cache syncs.
 func (a *Agent) serve() error {
 	var reload func()
 
 	if a.cfg.Service.HotReload {
 		reload = a.triggerReload
 	}
-	srv, err := newServer(
-		a.cfg.Service.HTTPServer.Addr,
-		&a.ready,
-		reload,
-		a.registry,
-		a.logger,
-	)
+	srv, err := newAgentServer(a.cfg.Service.HTTPServer.Addr, &a.ready, reload, a.logger)
 	if err != nil {
 		return err
 	}
-	a.server = srv
+	a.startServer(srv)
+
+	srv, err = newMetricsServer(a.cfg.Service.MetricsServer.Addr, a.registry, a.logger)
+	if err != nil {
+		return err
+	}
+	a.startServer(srv)
+
+	if a.cfg.Service.PprofServer.Addr == "" {
+		return nil
+	}
+	srv, err = newPprofServer(a.cfg.Service.PprofServer.Addr, a.logger)
+	if err != nil {
+		return err
+	}
+	a.startServer(srv)
+
+	return nil
+}
+
+// startServer runs srv in the background, and keeps it for the stop
+// sequence to shut down.
+func (a *Agent) startServer(srv *httpServer) {
+	a.servers = append(a.servers, srv)
 
 	go func() {
 		if err := srv.run(); err != nil {
 			a.errs <- err
 		}
 	}()
-	if a.cfg.Service.PprofServer.Addr == "" {
-		return nil
-	}
-	pprofSrv, err := newPprofServer(a.cfg.Service.PprofServer.Addr, a.logger)
-	if err != nil {
-		return err
-	}
-	a.pprof = pprofSrv
-	go func() {
-		if err := pprofSrv.run(); err != nil {
-			a.errs <- err
-		}
-	}()
-	return nil
 }
 
 // checkServerVersion checks that the APIServer supports the streaming

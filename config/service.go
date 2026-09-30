@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	defaultHTTPAddr        = ":8080"
+	defaultHTTPAddr        = ":8081"
+	defaultMetricsAddr     = ":8080"
 	defaultShutdownTimeout = units.Duration(30 * time.Second)
 	defaultCELEvalTimeout  = units.Duration(250 * time.Millisecond)
 )
@@ -24,13 +25,19 @@ type Service struct {
 	CELEvalTimeout  units.Duration `yaml:"cel_eval_timeout,omitempty"`
 	HotReload       bool           `yaml:"hot_reload,omitempty"`
 	HTTPServer      HTTPServer     `yaml:"http_server,omitempty"`
+	MetricsServer   MetricsServer  `yaml:"metrics_server,omitempty"`
 	PprofServer     PprofServer    `yaml:"pprof_server,omitempty"`
 	Logging         Logging        `yaml:"logging,omitempty"`
 }
 
-// HTTPServer configures the local HTTP server that exposes the metrics,
-// liveness/readiness probes and reload endpoints.
+// HTTPServer configures the HTTP server that serves the liveness and
+// readiness probes and the config reload endpoint.
 type HTTPServer struct {
+	Addr string `yaml:"addr,omitempty"`
+}
+
+// MetricsServer configures the HTTP server that serves the Prometheus metrics.
+type MetricsServer struct {
 	Addr string `yaml:"addr,omitempty"`
 }
 
@@ -45,6 +52,7 @@ func DefaultServiceConfig() Service {
 		ShutdownTimeout: defaultShutdownTimeout,
 		CELEvalTimeout:  defaultCELEvalTimeout,
 		HTTPServer:      HTTPServer{Addr: defaultHTTPAddr},
+		MetricsServer:   MetricsServer{Addr: defaultMetricsAddr},
 		Logging: Logging{
 			Format: LogFormatJSON,
 			Level:  LogLevelInfo,
@@ -66,14 +74,56 @@ func (c Service) Validate() error {
 	if err := c.HTTPServer.Validate(); err != nil {
 		return diag.Prefix(err, "http_server")
 	}
+	if err := c.MetricsServer.Validate(); err != nil {
+		return diag.Prefix(err, "metrics_server")
+	}
 	if err := c.PprofServer.Validate(); err != nil {
 		return diag.Prefix(err, "pprof_server")
+	}
+	if err := c.validatePorts(); err != nil {
+		return err
 	}
 	return diag.Prefix(c.Logging.Validate(), "logging")
 }
 
+// validatePorts checks that two servers don't listen on the same port.
+func (c Service) validatePorts() error {
+	servers := []struct {
+		key, addr, defaultAddr string
+	}{
+		{key: "http_server", addr: c.HTTPServer.Addr, defaultAddr: defaultHTTPAddr},
+		{key: "metrics_server", addr: c.MetricsServer.Addr, defaultAddr: defaultMetricsAddr},
+		{key: "pprof_server", addr: c.PprofServer.Addr},
+	}
+	for i, s := range servers {
+		for _, other := range servers[:i] {
+			if s.addr == "" || !sharePort(s.addr, other.addr) {
+				continue
+			}
+			// Report the address that was changed from its default,
+			// since it's the one written in the file.
+			if s.addr == s.defaultAddr && other.addr != other.defaultAddr {
+				s, other = other, s
+			}
+			return diag.Prefix(
+				diag.Pathf("addr", "addr %q uses the same port as %s.addr %q", s.addr, other.key, other.addr),
+				s.key,
+			)
+		}
+	}
+	return nil
+}
+
 // Validate validates the configuration.
 func (c HTTPServer) Validate() error {
+	if c.Addr == "" {
+		return diag.Pathf("addr", "addr is required")
+	}
+	return validateAddr(c.Addr)
+}
+
+// Validate validates the configuration.
+func (c MetricsServer) Validate() error {
 	if c.Addr == "" {
 		return diag.Pathf("addr", "addr is required")
 	}
@@ -100,6 +150,27 @@ func validateAddr(addr string) error {
 		return diag.Pathf("addr", "invalid port %q in addr %q", port, addr)
 	}
 	return nil
+}
+
+// sharePort reports whether two listen addresses bind the same port on a
+// common interface. A host that's empty or unspecified, such as 0.0.0.0,
+// listens on every interface. Port 0 picks a free port, so it never clashes.
+func sharePort(a, b string) bool {
+	hostA, portA, errA := net.SplitHostPort(a)
+	hostB, portB, errB := net.SplitHostPort(b)
+	if errA != nil || errB != nil {
+		return false
+	}
+	numA, _ := strconv.ParseUint(portA, 10, 16)
+	numB, _ := strconv.ParseUint(portB, 10, 16)
+	if numA == 0 || numA != numB {
+		return false
+	}
+	return hostA == hostB || isAnyHost(hostA) || isAnyHost(hostB)
+}
+
+func isAnyHost(host string) bool {
+	return host == "" || net.ParseIP(host).IsUnspecified()
 }
 
 func addrReason(err error) string {

@@ -15,7 +15,7 @@ spec:
     matchLabels:
       {{- include "kem-agent.selectorLabels" . | nindent 6 }}
   endpoints:
-    - port: http
+    - port: metrics
       path: /metrics
       {{- with .Values.serviceMonitor.interval }}
       interval: {{ . }}

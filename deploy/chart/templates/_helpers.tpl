@@ -99,11 +99,38 @@ Rendering fails when the address has no port that a container can expose.
 {{- end }}
 
 {{/*
-Returns the port that serves the agent's probes and metrics, read from its HTTP listen
-address.
+Returns the port that serves the agent's probes and reload endpoint, read from
+its HTTP listen address.
 */}}
 {{- define "kem-agent.httpPort" -}}
 {{- include "kem-agent.port" (required "config.service.http_server.addr is required" (dig "service" "http_server" "addr" "" .Values.config)) }}
+{{- end }}
+
+{{/*
+Returns the port that serves the agent's metrics, read from its metrics listen
+address. Rendering fails when the HTTP listen address uses the same port.
+*/}}
+{{- define "kem-agent.metricsPort" -}}
+{{- $port := include "kem-agent.port" (required "config.service.metrics_server.addr is required" (dig "service" "metrics_server" "addr" "" .Values.config)) }}
+{{- if eq $port (include "kem-agent.httpPort" .) }}
+{{- fail "config.service.metrics_server.addr and config.service.http_server.addr must use different ports" }}
+{{- end }}
+{{- $port }}
+{{- end }}
+
+{{/*
+Returns the port that serves the agent's pprof endpoints, read from its pprof
+listen address, or nothing when that address is empty. Rendering fails when
+the HTTP or metrics listen address uses the same port.
+*/}}
+{{- define "kem-agent.pprofPort" -}}
+{{- with dig "service" "pprof_server" "addr" "" .Values.config }}
+{{- $port := include "kem-agent.port" . }}
+{{- if or (eq $port (include "kem-agent.httpPort" $)) (eq $port (include "kem-agent.metricsPort" $)) }}
+{{- fail "config.service.pprof_server.addr must use a port different from config.service.http_server.addr and config.service.metrics_server.addr" }}
+{{- end }}
+{{- $port }}
+{{- end }}
 {{- end }}
 
 {{/*

@@ -55,9 +55,12 @@ spec:
             - name: http
               containerPort: {{ include "kem-agent.httpPort" . }}
               protocol: TCP
-            {{- with dig "service" "pprof_server" "addr" "" .Values.config }}
+            - name: metrics
+              containerPort: {{ include "kem-agent.metricsPort" . }}
+              protocol: TCP
+            {{- with include "kem-agent.pprofPort" . }}
             - name: pprof
-              containerPort: {{ include "kem-agent.port" . }}
+              containerPort: {{ . }}
               protocol: TCP
             {{- end }}
           env:

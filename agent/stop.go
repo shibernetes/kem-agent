@@ -106,10 +106,7 @@ func (a *Agent) shutdownServers(deadline time.Time) {
 	ctx, cancel := context.WithDeadline(context.Background(), deadline)
 	defer cancel()
 
-	if a.pprof != nil {
-		a.pprof.shutdown(ctx)
-	}
-	if a.server != nil {
-		a.server.shutdown(ctx)
+	for _, srv := range a.servers {
+		srv.shutdown(ctx)
 	}
 }

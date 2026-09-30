@@ -15,6 +15,8 @@ image:
 config:
   service:
     http_server:
+      addr: ":8081"
+    metrics_server:
       addr: ":8080"
   source:
     watches: []
@@ -113,7 +115,7 @@ persistence:
     - ReadWriteOnce
 
 service:
-  # -- Annotations for the Service
+  # -- Annotations for the Service, which exposes the metrics port
   annotations: {}
 
 serviceMonitor:

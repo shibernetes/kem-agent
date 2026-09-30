@@ -4,6 +4,8 @@ service:
   cel_eval_timeout: 250ms
   hot_reload: true
   http_server:
+    addr: ":8081"
+  metrics_server:
     addr: ":8080"
   logging:
     format: text

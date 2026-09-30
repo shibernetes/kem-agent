@@ -73,12 +73,12 @@
             "properties": {
                 "addr": {
                     "type": "string",
-                    "default": ":8080"
+                    "default": ":8081"
                 }
             },
             "additionalProperties": false,
             "type": "object",
-            "description": "HTTPServer configures the local HTTP server that exposes the metrics, liveness/readiness probes and reload endpoints."
+            "description": "HTTPServer configures the HTTP server that serves the liveness and readiness probes and the config reload endpoint."
         },
         "config.LogFormat": {
             "type": "string",
@@ -113,6 +113,17 @@
             "type": "object",
             "description": "Logging configures the logger output format and level."
         },
+        "config.MetricsServer": {
+            "properties": {
+                "addr": {
+                    "type": "string",
+                    "default": ":8080"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "MetricsServer configures the HTTP server that serves the Prometheus metrics."
+        },
         "config.PprofServer": {
             "properties": {
                 "addr": {
@@ -142,6 +153,9 @@
                 },
                 "http_server": {
                     "$ref": "#/$defs/config.HTTPServer"
+                },
+                "metrics_server": {
+                    "$ref": "#/$defs/config.MetricsServer"
                 },
                 "pprof_server": {
                     "$ref": "#/$defs/config.PprofServer"

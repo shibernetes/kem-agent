@@ -12,9 +12,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - name: http
-      port: {{ include "kem-agent.httpPort" . }}
-      targetPort: http
+    - name: metrics
+      port: {{ include "kem-agent.metricsPort" . }}
+      targetPort: metrics
       protocol: TCP
   selector:
     {{- include "kem-agent.selectorLabels" . | nindent 4 }}

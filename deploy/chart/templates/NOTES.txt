@@ -1,5 +1,5 @@
 {{- $fullname := include "kem-agent.fullname" . }}
-{{- $port := include "kem-agent.httpPort" . }}
+{{- $port := include "kem-agent.metricsPort" . }}
 {{- $rbac := include "kem-agent.rbac" . | fromJson -}}
 Version {{ .Chart.AppVersion }} of {{ .Chart.Name }} is deployed as {{ $fullname }} in namespace {{ .Release.Namespace }}, and configured to watch
 {{- if eq $rbac.scope "cluster" }} all namespaces.
@@ -11,7 +11,7 @@ To follow the agent logs, run this command:
 
   kubectl logs -n {{ .Release.Namespace }} deploy/{{ $fullname }} -f
 
-To check the metrics, forward the HTTP port and query /metrics:
+To check the metrics, forward the metrics port and query /metrics:
 
   kubectl port-forward -n {{ .Release.Namespace }} svc/{{ $fullname }} {{ $port }}
   curl localhost:{{ $port }}/metrics

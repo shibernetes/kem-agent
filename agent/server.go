@@ -62,14 +62,9 @@ func (s *httpServer) shutdown(ctx context.Context) {
 	_ = s.srv.Shutdown(ctx)
 }
 
-func newServer(addr string, ready *atomic.Bool, reload func(), metrics prometheus.Gatherer, logger *slog.Logger) (*httpServer, error) {
-	const name = "http"
-
-	var lc net.ListenConfig
-	ln, err := lc.Listen(context.Background(), "tcp", addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to listen on %q: %w", addr, err)
-	}
+// newAgentServer returns the server for the health probes and the
+// reload endpoint.
+func newAgentServer(addr string, ready *atomic.Bool, reload func(), logger *slog.Logger) (*httpServer, error) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET "+healthzPath, func(w http.ResponseWriter, _ *http.Request) {
@@ -91,18 +86,37 @@ func newServer(addr string, ready *atomic.Bool, reload func(), metrics prometheu
 		reload()
 		w.WriteHeader(http.StatusAccepted)
 	})
+	return listenHTTP("http", addr, mux, serverWriteTimeout, logger)
+}
+
+// newMetricsServer returns the server that exposes the Prometheus metrics.
+func newMetricsServer(addr string, metrics prometheus.Gatherer, logger *slog.Logger) (*httpServer, error) {
+	mux := http.NewServeMux()
+
 	mux.Handle("GET "+metricsPath, promhttp.HandlerFor(metrics, promhttp.HandlerOpts{
 		ErrorLog: slog.NewLogLogger(
 			logger.With(slog.String("component", "promhttp")).Handler(),
 			slog.LevelError,
 		),
 	}))
+	return listenHTTP("metrics", addr, mux, serverWriteTimeout, logger)
+}
+
+// listenHTTP binds addr and returns an HTTP server that serves handler on it.
+// A zero writeTimeout sets no deadline for writing a response.
+func listenHTTP(name, addr string, handler http.Handler, writeTimeout time.Duration, logger *slog.Logger) (*httpServer, error) {
+	var lc net.ListenConfig
+
+	ln, err := lc.Listen(context.Background(), "tcp", addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to listen on %q: %w", addr, err)
+	}
 	return &httpServer{
 		srv: &http.Server{
-			Handler:           mux,
+			Handler:           handler,
 			ReadHeaderTimeout: serverReadHeaderTimeout,
 			ReadTimeout:       serverReadTimeout,
-			WriteTimeout:      serverWriteTimeout,
+			WriteTimeout:      writeTimeout,
 			IdleTimeout:       serverIdleTimeout,
 		},
 		ln:   ln,
