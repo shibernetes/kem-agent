@@ -1,9 +1,9 @@
 # This file builds the image published by a release.
 #
 # goreleaser compiles the agent for each platform first, then builds this file from
-# a temporary directory holding one binary per platform, at linux/amd64/agent and
-# linux/arm64/agent. TARGETPLATFORM selects the binary for the image being built,
-# and the image labels are set in .goreleaser.yaml.
+# a temporary directory containing one binary per platform, using paths such as
+# linux/amd64/agent or linux/arm/v7/agent. TARGETPLATFORM selects the binary for
+# the image being built. The image labels are set in .goreleaser.yaml.
 #
 # Nothing is compiled here, so this file cannot build from the repository root.
 # To build an image from source, use the Dockerfile beside it.

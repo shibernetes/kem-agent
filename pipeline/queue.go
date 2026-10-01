@@ -46,7 +46,7 @@ func NewQueue(n int) *Queue {
 // than a length prefix can describe.
 func (q *Queue) Push(frame []byte) (EvictedFrames, bool) {
 	n := len(frame)
-	if n == 0 || n > q.ceiling || n > maxFrameLen {
+	if n == 0 || n > q.ceiling || uint64(n) > maxFrameLen {
 		return EvictedFrames{}, false
 	}
 	q.mu.Lock()

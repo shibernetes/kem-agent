@@ -28,5 +28,8 @@ annotations:
       image: ghcr.io/shibernetes/kem-agent:0.0.0
       platforms:
         - linux/amd64
+        - linux/arm/v7
         - linux/arm64
+        - linux/ppc64le
+        - linux/s390x
   artifacthub.io/prerelease: "false"

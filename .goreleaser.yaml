@@ -13,7 +13,14 @@ builds:
       - darwin
     goarch:
       - amd64
+      - arm
       - arm64
+      - ppc64le
+      - s390x
+    goarm:
+      - "7"
+    goarm64:
+      - v8.0
     flags:
       - -trimpath
       # Without VCS stamping, a binary whose -X flags missed their variables
@@ -31,7 +38,7 @@ builds:
 archives:
   - formats:
       - tar.gz
-    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
 
 checksum:
   name_template: checksums.txt
@@ -51,7 +58,10 @@ dockers_v2:
       - "{{ if not .Prerelease }}latest{{ end }}"
     platforms:
       - linux/amd64
+      - linux/arm/v7
       - linux/arm64
+      - linux/ppc64le
+      - linux/s390x
     sbom: false
     labels:
       org.opencontainers.image.title: kem-agent

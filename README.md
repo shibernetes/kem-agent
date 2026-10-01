@@ -21,9 +21,9 @@
 
 - [Features](#features)
 - [Requirements](#requirements)
+- [Release artifacts](#release-artifacts)
 - [Install](#install)
   - [Helm chart](#helm-chart)
-  - [Container image](#container-image)
   - [Build from source](#build-from-source)
 - [Configuration](#configuration)
   - [Sinks](#sinks)
@@ -53,6 +53,16 @@
 > The agent reads events with [streaming lists](https://kubernetes.io/docs/reference/using-api/api-concepts/#streaming-lists), which the API server serves only when the `WatchList` feature gate is enabled. The gate is enabled by default in Kubernetes 1.32 and in 1.34 or later. On 1.27 through 1.31 and on 1.33, [enable it in the API server](https://kubernetes.io/docs/tasks/administer-cluster/configure-feature-gates/). Without it, the agent stops at its first watch with an error saying that the API server doesn't serve initial events.
 >
 > To check a running cluster, look for `kubernetes_feature_enabled{name="WatchList"}` in the API server's `/metrics`.
+
+## Release artifacts
+
+Each [release](https://github.com/shibernetes/kem-agent/releases) publishes the following artifacts:
+
+- The agent binary for Linux, on `amd64`, `arm/v7`, `arm64`, `ppc64le`, and `s390x`
+- The agent binary for macOS, on `amd64` and `arm64`
+- The [multi-architecture](https://oci.dag.dev/?image=ghcr.io/shibernetes/kem-agent:0.1.0-alpha.1) container image `ghcr.io/shibernetes/kem-agent`, for the same Linux platforms
+
+Release images and the chart are signed with [cosign](https://github.com/sigstore/cosign). To check a signature, see [Verify the signature](deploy/chart/README.md#verify-the-signature).
 
 ## Install
 
@@ -86,12 +96,6 @@ kubectl logs -n observability deploy/kem-agent -f
 ```
 
 When `config.source.watches` is empty, the chart adds a watch on the release namespace. The chart also creates the roles and role bindings that the agent needs, as described in [RBAC](deploy/chart/README.md#rbac). For the full list of chart values, see the [chart README](deploy/chart/README.md).
-
-### Container image
-
-Each [release](https://github.com/shibernetes/kem-agent/releases) publishes the agent binary for Linux and macOS, and the [multi-architecture](https://oci.dag.dev/?image=ghcr.io/shibernetes/kem-agent:0.1.0-alpha.1) container image `ghcr.io/shibernetes/kem-agent`, both for `amd64` and `arm64`.
-
-Release images and the chart are signed with [cosign](https://github.com/sigstore/cosign). To check a signature, see [Verify the signature](deploy/chart/README.md#verify-the-signature).
 
 ### Build from source
 
