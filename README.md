@@ -187,6 +187,10 @@ The agent serves Prometheus metrics at `/metrics` on `service.metrics_server.add
 
 To find out whether events are lost, check the `kem_agent_events_dropped_total` metric. Its `stage` and `reason` labels say where and why each event was dropped. When you deploy with the Helm chart, set `serviceMonitor.enabled` to `true` to create a Prometheus Operator [ServiceMonitor](https://prometheus-operator.dev/docs/api-reference/api/#monitoring.coreos.com/v1.ServiceMonitor), as described in [Metrics](deploy/chart/README.md#metrics).
 
+### Metrics
+
+For the full list of the agent's metrics, see [docs/metrics.md](docs/metrics.md).
+
 ## Build from source
 
 Building requires Go 1.27 or later. The following commands write the `agent` binary to the repository root.
