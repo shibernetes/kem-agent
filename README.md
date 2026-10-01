@@ -17,6 +17,23 @@
 > [!NOTE]
 > The project is in alpha. Until version 1.0, the configuration format is subject to change between releases, and the [release notes](https://github.com/shibernetes/kem-agent/releases) describe each change.
 
+## Contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Install](#install)
+  - [Helm chart](#helm-chart)
+  - [Container image](#container-image)
+  - [Build from source](#build-from-source)
+- [Configuration](#configuration)
+  - [Sinks](#sinks)
+  - [Filters](#filters)
+  - [Validation](#validation)
+- [Monitoring](#monitoring)
+  - [Metrics](#metrics)
+- [Known limitations](#known-limitations)
+- [License](#license)
+
 ## Features
 
 - **Sinks.** Send events to an OpenTelemetry collector over OTLP, to an HTTP webhook, or to Graylog. Write them to stdout or a file, or count them as Prometheus metrics.
@@ -38,6 +55,8 @@
 > To check a running cluster, look for `kubernetes_feature_enabled{name="WatchList"}` in the API server's `/metrics`.
 
 ## Install
+
+### Helm chart
 
 The chart reads the agent configuration from the `config` value. The following `values.yaml` is the smallest working setup. It prints every event in the release namespace to the agent's standard output.
 
@@ -68,7 +87,23 @@ kubectl logs -n observability deploy/kem-agent -f
 
 When `config.source.watches` is empty, the chart adds a watch on the release namespace. The chart also creates the roles and role bindings that the agent needs, as described in [RBAC](deploy/chart/README.md#rbac). For the full list of chart values, see the [chart README](deploy/chart/README.md).
 
-Release images and charts are signed with [cosign](https://github.com/sigstore/cosign). To check a signature, see [Verify the signature](deploy/chart/README.md#verify-the-signature).
+### Container image
+
+Each [release](https://github.com/shibernetes/kem-agent/releases) publishes the agent binary for Linux and macOS, and the [multi-architecture](https://oci.dag.dev/?image=ghcr.io/shibernetes/kem-agent:0.1.0-alpha.1) container image `ghcr.io/shibernetes/kem-agent`, both for `amd64` and `arm64`.
+
+Release images and the chart are signed with [cosign](https://github.com/sigstore/cosign). To check a signature, see [Verify the signature](deploy/chart/README.md#verify-the-signature).
+
+### Build from source
+
+Building requires Go 1.27 or later. The following commands write the `agent` binary to the repository root.
+
+```sh
+git clone https://github.com/shibernetes/kem-agent.git
+cd kem-agent
+go build ./cmd/agent
+```
+
+Outside a pod, the binary uses your current kubeconfig context, or the kubeconfig file that the `--kubeconfig` flag points to.
 
 ## Configuration
 
@@ -164,23 +199,6 @@ For completion and validation in your editor, use the auto-generated JSON schema
 # yaml-language-server: $schema=https://raw.githubusercontent.com/shibernetes/kem-agent/master/config/schema/agent.config.schema.json
 ```
 
-## Run the binary
-
-Each [release](https://github.com/shibernetes/kem-agent/releases) publishes the agent binary for Linux and macOS on amd64 and arm64, and the container image `ghcr.io/shibernetes/kem-agent`. Outside a pod, the binary uses your current kubeconfig context, or the kubeconfig file that the `--kubeconfig` flag points to.
-
-```sh
-agent -c config.yaml
-```
-
-The ConfigMap checkpoint store defaults to the pod's namespace, so set `checkpoint.store.namespace` when you run the binary directly, or use a file store, as in the following example.
-
-```yaml
-checkpoint:
-  store:
-    type: file
-    path: ./checkpoint.json
-```
-
 ## Monitoring
 
 The agent serves Prometheus metrics at `/metrics` on `service.metrics_server.addr`, which defaults to `:8080`. It serves the liveness and readiness checks at `/healthz` and `/readyz` on a separate address, `service.http_server.addr`, which defaults to `:8081`.
@@ -190,16 +208,6 @@ To find out whether events are lost, check the `kem_agent_events_dropped_total` 
 ### Metrics
 
 For the full list of the agent's metrics, see [docs/metrics.md](docs/metrics.md).
-
-## Build from source
-
-Building requires Go 1.27 or later. The following commands write the `agent` binary to the repository root.
-
-```sh
-git clone https://github.com/shibernetes/kem-agent.git
-cd kem-agent
-go build ./cmd/agent
-```
 
 ## Known limitations
 
