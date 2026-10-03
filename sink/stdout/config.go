@@ -14,9 +14,16 @@ var _ sink.Drainable = Config{}
 
 // Config defines the configuration of the stdout sink.
 type Config struct {
-	Type  string           `yaml:"type"`
+	// Sink type
+	Type string `yaml:"type"`
+
+	// Configuration of the batching strategy
 	Batch sink.BatchConfig `yaml:"batch,omitempty"`
+
+	// Configuration of the events queue
 	Queue sink.QueueConfig `yaml:"queue,omitempty"`
+
+	// Configuration of the retry strategy
 	Retry sink.RetryConfig `yaml:"retry,omitempty"`
 }
 

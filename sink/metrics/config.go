@@ -37,22 +37,43 @@ var reservedPrefixes = []string{
 
 // Config defines the configuration of the metrics sink.
 type Config struct {
-	Type                       string               `yaml:"type"`
-	DefaultMetricsNamespace    string               `yaml:"default_metrics_namespace,omitempty"`
-	MaxSeries                  int                  `yaml:"max_series,omitempty"`
+	// Sink type
+	Type string `yaml:"type"`
+
+	// Default namespace name for the metrics that don't set one
+	DefaultMetricsNamespace string `yaml:"default_metrics_namespace,omitempty"`
+
+	// Maximum count of emitted series across all metrics. A zero
+	// value disables the limit
+	MaxSeries int `yaml:"max_series,omitempty"`
+
+	// Validation scheme applied to the metric and label names
 	MetricNameValidationScheme NameValidationScheme `yaml:"metric_name_validation_scheme,omitempty"`
-	Metrics                    []Metric             `yaml:"metrics"`
+
+	// List of metrics recorded by the sink
+	Metrics []Metric `yaml:"metrics"`
 }
 
 // Metric defines one instrument the sink registers, incremented once per
 // event it records. Counters are the only kind, since an event has no
 // value a gauge or a histogram could take.
 type Metric struct {
-	Name        string            `yaml:"name"`
-	Namespace   string            `yaml:"namespace,omitempty"`
-	Subsystem   string            `yaml:"subsystem,omitempty"`
-	Help        string            `yaml:"help"`
-	Labels      map[string]string `yaml:"labels,omitempty"`
+	// Name of the metric, without its namespace and subsystem
+	Name string `yaml:"name"`
+
+	// Namespace of the metric. Uses default_metrics_namespace when empty
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Subsystem of the metric
+	Subsystem string `yaml:"subsystem,omitempty"`
+
+	// Help text of the metric
+	Help string `yaml:"help"`
+
+	// Labels of the metric, mapped to the event fields
+	Labels map[string]string `yaml:"labels,omitempty"`
+
+	// Constant labels added to all series of the metric
 	ConstLabels map[string]string `yaml:"const_labels,omitempty"`
 }
 

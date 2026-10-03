@@ -50,15 +50,34 @@ var _ sink.Drainable = Config{}
 
 // Config defines the configuration of the OTel sink.
 type Config struct {
-	Type        string                   `yaml:"type"`
-	Endpoint    string                   `yaml:"endpoint"`
-	Compression Compression              `yaml:"compression,omitempty"`
-	Headers     map[string]opaque.String `yaml:"headers,omitempty"`
-	SendTimeout units.Duration           `yaml:"send_timeout,omitempty"`
-	TLS         *tlsconfig.Config        `yaml:"tls,omitempty"`
-	Batch       sink.BatchConfig         `yaml:"batch,omitempty"`
-	Queue       sink.QueueConfig         `yaml:"queue,omitempty"`
-	Retry       sink.RetryConfig         `yaml:"retry,omitempty"`
+	// Sink type
+	Type string `yaml:"type"`
+
+	// Address of the OTLP gRPC receiver, as host:port. An https scheme
+	// enables TLS
+	Endpoint string `yaml:"endpoint"`
+
+	// Compression algorithm name
+	Compression Compression `yaml:"compression,omitempty"`
+
+	// Headers sent with all requests. Requires TLS, since all headers
+	// are treated as a potentially sensitive value
+	Headers map[string]opaque.String `yaml:"headers,omitempty"`
+
+	// Maximum time of a single delivery attempt
+	SendTimeout units.Duration `yaml:"send_timeout,omitempty"`
+
+	// Configuration of the TLS connection
+	TLS *tlsconfig.Config `yaml:"tls,omitempty"`
+
+	// Configuration of the batching strategy
+	Batch sink.BatchConfig `yaml:"batch,omitempty"`
+
+	// Configuration of the events queue
+	Queue sink.QueueConfig `yaml:"queue,omitempty"`
+
+	// Configuration of the retry strategy
+	Retry sink.RetryConfig `yaml:"retry,omitempty"`
 }
 
 // DefaultConfig returns the default configuration.

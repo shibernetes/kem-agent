@@ -24,7 +24,9 @@ var storeTypes = []string{configmap.TypeName, file.TypeName}
 // are persisted.
 type Checkpoint struct {
 	checkpoint.Config `yaml:",inline"`
-	Store             Component `yaml:"store"`
+
+	// Configuration of the checkpoint store
+	Store Component `yaml:"store"`
 }
 
 // DefaultCheckpointConfig returns the default checkpoint configuration.

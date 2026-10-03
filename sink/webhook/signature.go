@@ -44,8 +44,12 @@ var identifiers = []string{IdentifierV1, IdentifierV1a}
 
 // Signature configures Standard Webhooks request signing.
 type Signature struct {
-	Identifier string        `yaml:"identifier,omitempty"`
-	Secret     opaque.String `yaml:"secret,omitempty"`
+	// Signature scheme, v1 for HMAC-SHA256 or v1a for Ed25519. An empty
+	// value disables signing
+	Identifier string `yaml:"identifier,omitempty"`
+
+	// Signing key in base64, prefixed with whsec_ for v1 or whsk_ for v1a
+	Secret opaque.String `yaml:"secret,omitempty"`
 }
 
 // Validate validates the signing settings.

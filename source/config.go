@@ -40,10 +40,19 @@ var selectableFields = []string{
 
 // Config defines the configuration of the Kubernetes events source.
 type Config struct {
-	Watches              []WatchConfig    `yaml:"watches,omitempty" jsonschema:"minItems=1"`
-	BootstrapEventMaxAge units.Duration   `yaml:"bootstrap_event_max_age,omitempty"`
-	Sanitizers           sanitizer.Config `yaml:"sanitizers,omitempty"`
-	Enrichment           enricher.Config  `yaml:"enrichment,omitempty"`
+	// List of namespaces to read events from. A single watch with an
+	// empty name reads all events of the cluster
+	Watches []WatchConfig `yaml:"watches,omitempty" jsonschema:"minItems=1"`
+
+	// Maximum age of the events a watch's first replay delivers, from
+	// their last occurrence. A zero value keeps all events
+	BootstrapEventMaxAge units.Duration `yaml:"bootstrap_event_max_age,omitempty"`
+
+	// Configuration of the sanitizers applied to all events
+	Sanitizers sanitizer.Config `yaml:"sanitizers,omitempty"`
+
+	// Configuration of the enrichment feature
+	Enrichment enricher.Config `yaml:"enrichment,omitempty"`
 }
 
 // DefaultConfig returns the default source configuration, which declares
@@ -72,11 +81,16 @@ func (c Config) Validate() error {
 // WatchConfig configures a watch over the events of a single namespace
 // or over the events of every namespace when no namespace is specified.
 //
-// Both selectors are applied by the APIServer, so they reduce what it
-// sends rather than what the agent reads and discards.
+// Both selectors can be used to narrow the events sent by the APIServer.
 type WatchConfig struct {
-	Namespace     string `yaml:"namespace,omitempty"`
+	// Name of the namespace to watch
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Label selector applied by the APIServer to the served events
 	LabelSelector string `yaml:"label_selector,omitempty"`
+
+	// Field selector applied by the APIServer to the served events. Only
+	// the selectable fields can be used
 	FieldSelector string `yaml:"field_selector,omitempty"`
 }
 

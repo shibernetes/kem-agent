@@ -1,0 +1,40 @@
+flowchart TD
+  k8s[Kubernetes APIServer]
+
+  subgraph agent [kem-agent]
+    checkpointer[Checkpointer] -->|writes| store[(Checkpoint\nStore)]
+    informer[Informer]
+    cache[(Informer cache)]
+    source[Source] --> sanitizers[Sanitizers] --> enricher[Enricher]
+    pipelines[Pipelines]
+    queue[Queue] --> drainer[Drainer]
+    metricsSink[Metrics sink]
+  end
+
+  subgraph sinks [Sinks]
+    otel[OTel Collector]
+    graylog[Graylog]
+    hook[HTTP endpoint]
+    stdout[stdout]
+    file[File]
+  end
+
+  source -.->|read positions| checkpointer
+  k8s -->|event watches| source
+  k8s -.->|sync object metadata| informer
+  enricher --> pipelines
+  enricher -.->|lookup| cache
+  informer -.->|write| cache
+  pipelines --> queue
+  pipelines --> metricsSink
+  drainer --> sinks
+  metricsSink -.->|scraped on /metrics| prom[Prometheus]
+
+  classDef sink fill:#161f2f,stroke:#3b82f6,stroke-width:2px
+  classDef kube fill:#201a2f,stroke:#8b5cf6,stroke-width:2px
+  classDef prometheus fill:#2d1d13,stroke:#f97316,stroke-width:2px
+  class metricsSink,otel,graylog,hook,stdout,file sink
+  class k8s kube
+  class prom prometheus
+  style agent fill:transparent,stroke-width:0.75px
+  style sinks fill:transparent,stroke-width:0.75px

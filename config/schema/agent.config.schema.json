@@ -6,6 +6,7 @@
             "properties": {
                 "save_interval": {
                     "$ref": "#/$defs/config.units.Duration",
+                    "description": "How often the positions are saved. A save is skipped when no position moved",
                     "default": "15s"
                 },
                 "store": {
@@ -14,13 +15,16 @@
                             "properties": {
                                 "type": {
                                     "type": "string",
-                                    "const": "configmap"
+                                    "const": "configmap",
+                                    "description": "Store type"
                                 },
                                 "name": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "Name of the ConfigMap containing the checkpoint data"
                                 },
                                 "namespace": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "Namespace of the ConfigMap. Uses the agent's own namespace when empty"
                                 }
                             },
                             "additionalProperties": false,
@@ -29,25 +33,27 @@
                                 "type",
                                 "name"
                             ],
-                            "description": "Config defines the configuration for a [Store]."
+                            "description": "Config defines the configuration of a store."
                         },
                         {
                             "properties": {
                                 "type": {
                                     "type": "string",
-                                    "const": "file"
+                                    "const": "file",
+                                    "description": "Store type"
                                 },
                                 "path": {
-                                    "type": "string"
+                                    "type": "string",
+                                    "description": "Path of the checkpoint file"
                                 },
                                 "create_directory": {
                                     "type": "boolean",
-                                    "description": "CreateDirectory creates the directory holding the state file rather than failing when it does not exist.",
+                                    "description": "Create the checkpoint file's directory when it doesn't exist",
                                     "default": false
                                 },
                                 "directory_mode": {
                                     "type": "integer",
-                                    "description": "DirectoryMode is the permission a created directory takes, and is written in octal, with the leading zero.",
+                                    "description": "Permissions of the created directory, in octal notation with a leading zero",
                                     "default": 448
                                 }
                             },
@@ -59,7 +65,8 @@
                             ],
                             "description": "Config defines the configuration for a [Store]."
                         }
-                    ]
+                    ],
+                    "description": "Configuration of the checkpoint store"
                 }
             },
             "additionalProperties": false,
@@ -73,6 +80,7 @@
             "properties": {
                 "addr": {
                     "type": "string",
+                    "description": "Address to listen on, as host:port. An empty host listens on all interfaces",
                     "default": ":8081"
                 }
             },
@@ -102,10 +110,12 @@
             "properties": {
                 "format": {
                     "$ref": "#/$defs/config.LogFormat",
+                    "description": "Output format of the logs",
                     "default": "json"
                 },
                 "level": {
                     "$ref": "#/$defs/config.LogLevel",
+                    "description": "Lowest level logged. The agent logs nothing below info, so debug level additionally emits client-go's verbose logs",
                     "default": "info"
                 }
             },
@@ -117,6 +127,7 @@
             "properties": {
                 "addr": {
                     "type": "string",
+                    "description": "Address to listen on, as host:port. An empty host listens on all interfaces",
                     "default": ":8080"
                 }
             },
@@ -127,7 +138,8 @@
         "config.PprofServer": {
             "properties": {
                 "addr": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Address to listen on, as host:port. An empty value disables the pprof server"
                 }
             },
             "additionalProperties": false,
@@ -137,31 +149,39 @@
         "config.Service": {
             "properties": {
                 "cluster_name": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Name of the cluster"
                 },
                 "shutdown_timeout": {
                     "$ref": "#/$defs/config.units.Duration",
+                    "description": "Maximum time to deliver the pending events and save the positions when the agent shuts down",
                     "default": "30s"
                 },
                 "cel_eval_timeout": {
                     "$ref": "#/$defs/config.units.Duration",
+                    "description": "Maximum time to evaluate one event against the filters of all pipelines that read it",
                     "default": "250ms"
                 },
                 "hot_reload": {
                     "type": "boolean",
+                    "description": "Enable hot reload of the filters. Other changes require a restart",
                     "default": false
                 },
                 "http_server": {
-                    "$ref": "#/$defs/config.HTTPServer"
+                    "$ref": "#/$defs/config.HTTPServer",
+                    "description": "Configuration of the HTTP server for the health probes and the reload endpoint"
                 },
                 "metrics_server": {
-                    "$ref": "#/$defs/config.MetricsServer"
+                    "$ref": "#/$defs/config.MetricsServer",
+                    "description": "Configuration of the HTTP server for the Prometheus metrics"
                 },
                 "pprof_server": {
-                    "$ref": "#/$defs/config.PprofServer"
+                    "$ref": "#/$defs/config.PprofServer",
+                    "description": "Configuration of the HTTP server for the pprof and memory debug endpoints"
                 },
                 "logging": {
-                    "$ref": "#/$defs/config.Logging"
+                    "$ref": "#/$defs/config.Logging",
+                    "description": "Configuration of the agent's logs"
                 }
             },
             "additionalProperties": false,
@@ -202,19 +222,22 @@
                     "items": {
                         "type": "string"
                     },
-                    "type": "array"
+                    "type": "array",
+                    "description": "List of watches that feed the pipeline, by name"
                 },
                 "filters": {
                     "items": {
                         "type": "string"
                     },
-                    "type": "array"
+                    "type": "array",
+                    "description": "List of CEL expressions that filter events. An event must match all of them to reach the sinks"
                 },
                 "sinks": {
                     "items": {
                         "type": "string"
                     },
-                    "type": "array"
+                    "type": "array",
+                    "description": "List of sinks that receive the pipeline's events, by name"
                 }
             },
             "additionalProperties": false,
@@ -228,16 +251,20 @@
                         "$ref": "#/$defs/source.WatchConfig"
                     },
                     "type": "array",
-                    "minItems": 1
+                    "minItems": 1,
+                    "description": "List of namespaces to read events from. A single watch with an empty name reads all events of the cluster"
                 },
                 "bootstrap_event_max_age": {
-                    "$ref": "#/$defs/config.units.Duration"
+                    "$ref": "#/$defs/config.units.Duration",
+                    "description": "Maximum age of the events a watch's first replay delivers, from their last occurrence. A zero value keeps all events"
                 },
                 "sanitizers": {
-                    "$ref": "#/$defs/source.sanitizer.Config"
+                    "$ref": "#/$defs/source.sanitizer.Config",
+                    "description": "Configuration of the sanitizers applied to all events"
                 },
                 "enrichment": {
-                    "$ref": "#/$defs/source.enricher.Config"
+                    "$ref": "#/$defs/source.enricher.Config",
+                    "description": "Configuration of the enrichment feature"
                 }
             },
             "additionalProperties": false,
@@ -247,18 +274,21 @@
         "source.WatchConfig": {
             "properties": {
                 "namespace": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Name of the namespace to watch"
                 },
                 "label_selector": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Label selector applied by the APIServer to the served events"
                 },
                 "field_selector": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Field selector applied by the APIServer to the served events. Only the selectable fields can be used"
                 }
             },
             "additionalProperties": false,
             "type": "object",
-            "description": "WatchConfig configures a watch over the events of a single namespace or over the events of every namespace when no namespace is specified. Both selectors are applied by the APIServer, so they reduce what it sends rather than what the agent reads and discards."
+            "description": "WatchConfig configures a watch over the events of a single namespace or over the events of every namespace when no namespace is specified. Both selectors can be used to narrow the events sent by the APIServer."
         },
         "source.enricher.Config": {
             "properties": {
@@ -267,46 +297,50 @@
                         "type": "string"
                     },
                     "type": "array",
-                    "description": "Resources lists the resources whose metadata is cached, written as resource.group, where a name with no group belongs to the core group."
+                    "description": "List of resources whose objects are cached to enrich events, as resource.group, such as pods or deployments.apps"
                 },
                 "sync_timeout": {
                     "$ref": "#/$defs/config.units.Duration",
-                    "description": "SyncTimeout bounds the initial sync of every cache.",
+                    "description": "Maximum time for the initial sync of the caches. The agent stops once it elapses",
                     "default": "1m0s"
                 },
                 "labels": {
                     "properties": {
                         "enabled": {
                             "type": "boolean",
+                            "description": "Enable the allowlist",
                             "default": true
                         },
                         "keys": {
                             "items": {
                                 "type": "string"
                             },
-                            "type": "array"
+                            "type": "array",
+                            "description": "List of keys to keep. An empty list preserves all keys"
                         }
                     },
                     "additionalProperties": false,
                     "type": "object",
-                    "description": "Allowlist lists the metadata keys copied onto an enriched object. An empty list keeps every key. To reject all, set Enabled to false."
+                    "description": "Configuration of the labels copied from the enriched object"
                 },
                 "annotations": {
                     "properties": {
                         "enabled": {
                             "type": "boolean",
+                            "description": "Enable the allowlist",
                             "default": false
                         },
                         "keys": {
                             "items": {
                                 "type": "string"
                             },
-                            "type": "array"
+                            "type": "array",
+                            "description": "List of keys to keep. An empty list preserves all keys"
                         }
                     },
                     "additionalProperties": false,
                     "type": "object",
-                    "description": "Allowlist lists the metadata keys copied onto an enriched object. An empty list keeps every key. To reject all, set Enabled to false."
+                    "description": "Configuration of the annotations copied from the enriched object"
                 }
             },
             "additionalProperties": false,
@@ -317,10 +351,12 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
+                    "description": "Enable the sanitizer",
                     "default": true
                 },
                 "max_bytes": {
                     "$ref": "#/$defs/config.units.Bytes",
+                    "description": "Maximum size of an annotation value in bytes, beyond which the value is truncated. A zero value disables the limit",
                     "default": "4Ki"
                 }
             },
@@ -331,16 +367,20 @@
         "source.sanitizer.Config": {
             "properties": {
                 "field_limits": {
-                    "$ref": "#/$defs/source.sanitizer.FieldLimits"
+                    "$ref": "#/$defs/source.sanitizer.FieldLimits",
+                    "description": "Configuration of the sanitizer that shortens long event fields and object references"
                 },
                 "last_applied_config": {
-                    "$ref": "#/$defs/source.sanitizer.LastAppliedConfig"
+                    "$ref": "#/$defs/source.sanitizer.LastAppliedConfig",
+                    "description": "Configuration of the sanitizer that drops the last-applied-configuration annotation written by kubectl"
                 },
                 "metadata_count_limit": {
-                    "$ref": "#/$defs/source.sanitizer.MetadataCountLimit"
+                    "$ref": "#/$defs/source.sanitizer.MetadataCountLimit",
+                    "description": "Configuration of the sanitizer that limits the number of labels and annotations of an event"
                 },
                 "annotation_value_limit": {
-                    "$ref": "#/$defs/source.sanitizer.AnnotationValueLimit"
+                    "$ref": "#/$defs/source.sanitizer.AnnotationValueLimit",
+                    "description": "Configuration of the sanitizer that shortens long annotation values"
                 }
             },
             "additionalProperties": false,
@@ -351,17 +391,19 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
+                    "description": "Enable the sanitizer",
                     "default": true
                 }
             },
             "additionalProperties": false,
             "type": "object",
-            "description": "FieldLimits shortens the event string fields events.k8s.io/v1 bounds, and the fields of the object references an event carries, which no API bounds at all."
+            "description": "FieldLimits shortens the event string fields using events.k8s.io/v1 bounds, and the fields of the object references an event carries, which no API bounds at all."
         },
         "source.sanitizer.LastAppliedConfig": {
             "properties": {
                 "enabled": {
                     "type": "boolean",
+                    "description": "Enable the sanitizer",
                     "default": true
                 }
             },
@@ -373,14 +415,17 @@
             "properties": {
                 "enabled": {
                     "type": "boolean",
+                    "description": "Enable the sanitizer",
                     "default": true
                 },
                 "max_labels": {
                     "type": "integer",
+                    "description": "Maximum count of labels to keep. A zero value preserves all labels",
                     "default": 100
                 },
                 "max_annotations": {
                     "type": "integer",
+                    "description": "Maximum count of annotations to keep. A zero value preserves all annotations",
                     "default": 100
                 }
             },
@@ -391,10 +436,12 @@
     },
     "properties": {
         "service": {
-            "$ref": "#/$defs/config.Service"
+            "$ref": "#/$defs/config.Service",
+            "description": "Configuration of the agent process"
         },
         "source": {
-            "$ref": "#/$defs/source.Config"
+            "$ref": "#/$defs/source.Config",
+            "description": "Configuration of the event source"
         },
         "sinks": {
             "additionalProperties": {
@@ -403,19 +450,23 @@
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "const": "file"
+                                "const": "file",
+                                "description": "Sink type"
                             },
                             "path": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Absolute path of the file"
                             },
                             "mode": {
                                 "type": "integer",
+                                "description": "Permissions applied to a created file, in octal notation with a leading zero. An existing file keeps its permissions",
                                 "default": 420
                             },
                             "batch": {
                                 "properties": {
                                     "max_events": {
                                         "type": "integer",
+                                        "description": "Maximum count of events in a batch. A zero value disables the limit",
                                         "default": 512
                                     },
                                     "max_bytes": {
@@ -429,6 +480,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of a batch in bytes, measured before compression. A zero value disables the limit",
                                         "default": "4Mi",
                                         "examples": [
                                             4096,
@@ -439,6 +491,7 @@
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time that a batch waits to fill before being sent",
                                         "default": "5s",
                                         "examples": [
                                             "250ms",
@@ -448,7 +501,8 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the batching strategy"
                             },
                             "queue": {
                                 "properties": {
@@ -463,6 +517,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of the queue in bytes. When the queue is full, it drops the oldest events",
                                         "default": "32Mi",
                                         "examples": [
                                             4096,
@@ -472,17 +527,20 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the events queue"
                             },
                             "retry": {
                                 "properties": {
                                     "enabled": {
                                         "type": "boolean",
+                                        "description": "Enable retry of failed event deliveries",
                                         "default": true
                                     },
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time spent retrying a batch before it's dropped",
                                         "default": "30s",
                                         "examples": [
                                             "250ms",
@@ -493,6 +551,7 @@
                                     "initial_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Time to wait before the first retry",
                                         "default": "500ms",
                                         "examples": [
                                             "250ms",
@@ -503,6 +562,7 @@
                                     "max_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time to wait between two retries",
                                         "default": "10s",
                                         "examples": [
                                             "250ms",
@@ -512,11 +572,13 @@
                                     },
                                     "multiplier": {
                                         "type": "number",
+                                        "description": "Factor by which the wait grows after each retry",
                                         "default": 1.5
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the retry strategy"
                             }
                         },
                         "additionalProperties": false,
@@ -525,33 +587,39 @@
                             "type",
                             "path"
                         ],
-                        "description": "Config defines the configuration of the file sink. Mode is the permission a created file takes, written in octal form with a leading zero. An existing file keeps the permission it has."
+                        "description": "Config defines the configuration of the file sink."
                     },
                     {
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "const": "graylog"
+                                "const": "graylog",
+                                "description": "Sink type"
                             },
                             "host": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Host name or address of the Graylog server"
                             },
                             "port": {
                                 "type": "integer",
+                                "description": "Port of the GELF TCP input on the Graylog server",
                                 "default": 12201
                             },
                             "source_host": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Sender name written to the GELF host field. Uses the pod name when empty"
                             },
                             "additional_fields": {
                                 "additionalProperties": {
                                     "type": "string"
                                 },
-                                "type": "object"
+                                "type": "object",
+                                "description": "Fields added to all messages. The underscore that GELF requires is automatically prepended to all field names"
                             },
                             "send_timeout": {
                                 "type": "string",
                                 "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "description": "Maximum time of a single delivery attempt",
                                 "default": "5s",
                                 "examples": [
                                     "250ms",
@@ -563,48 +631,61 @@
                                 "properties": {
                                     "insecure": {
                                         "type": "boolean",
+                                        "description": "Connect without TLS",
                                         "default": false
                                     },
                                     "insecure_skip_verify": {
                                         "type": "boolean",
+                                        "description": "Skip the server's certificate verification",
                                         "default": false
                                     },
                                     "min_version": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Minimum TLS version accepted, from 1.0 to 1.3. Defaults to 1.2"
                                     },
                                     "ca_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the CA certificates file, in PEM format. Mutually exclusive with ca_pem"
                                     },
                                     "ca_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "CA certificates data, in PEM format. Mutually exclusive with ca_file"
                                     },
                                     "include_system_ca_certs_pool": {
                                         "type": "boolean",
+                                        "description": "Trust the system CAs as well as the configured ones, which otherwise replace them",
                                         "default": false
                                     },
                                     "cert_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the client certificate, in PEM format. Mutually exclusive with cert_pem"
                                     },
                                     "cert_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Client certificate data, in PEM format. Mutually exclusive with cert_file"
                                     },
                                     "key_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the private key file, in PEM format. Mutually exclusive with key_pem"
                                     },
                                     "key_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Private key data, in PEM format. Mutually exclusive with key_file"
                                     },
                                     "server_name": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Server name sent in the TLS SNI extension and verified against the server's certificate. Uses the host of the address when empty"
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the TLS connection"
                             },
                             "batch": {
                                 "properties": {
                                     "max_events": {
                                         "type": "integer",
+                                        "description": "Maximum count of events in a batch. A zero value disables the limit",
                                         "default": 512
                                     },
                                     "max_bytes": {
@@ -618,6 +699,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of a batch in bytes, measured before compression. A zero value disables the limit",
                                         "default": "4Mi",
                                         "examples": [
                                             4096,
@@ -628,6 +710,7 @@
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time that a batch waits to fill before being sent",
                                         "default": "5s",
                                         "examples": [
                                             "250ms",
@@ -637,7 +720,8 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the batching strategy"
                             },
                             "queue": {
                                 "properties": {
@@ -652,6 +736,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of the queue in bytes. When the queue is full, it drops the oldest events",
                                         "default": "32Mi",
                                         "examples": [
                                             4096,
@@ -661,17 +746,20 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the events queue"
                             },
                             "retry": {
                                 "properties": {
                                     "enabled": {
                                         "type": "boolean",
+                                        "description": "Enable retry of failed event deliveries",
                                         "default": true
                                     },
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time spent retrying a batch before it's dropped",
                                         "default": "30s",
                                         "examples": [
                                             "250ms",
@@ -682,6 +770,7 @@
                                     "initial_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Time to wait before the first retry",
                                         "default": "500ms",
                                         "examples": [
                                             "250ms",
@@ -692,6 +781,7 @@
                                     "max_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time to wait between two retries",
                                         "default": "10s",
                                         "examples": [
                                             "250ms",
@@ -701,11 +791,13 @@
                                     },
                                     "multiplier": {
                                         "type": "number",
+                                        "description": "Factor by which the wait grows after each retry",
                                         "default": 1.5
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the retry strategy"
                             }
                         },
                         "additionalProperties": false,
@@ -720,14 +812,17 @@
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "const": "metrics"
+                                "const": "metrics",
+                                "description": "Sink type"
                             },
                             "default_metrics_namespace": {
                                 "type": "string",
+                                "description": "Default namespace name for the metrics that don't set one",
                                 "default": "kem_events"
                             },
                             "max_series": {
-                                "type": "integer"
+                                "type": "integer",
+                                "description": "Maximum count of emitted series across all metrics. A zero value disables the limit"
                             },
                             "metric_name_validation_scheme": {
                                 "type": "string",
@@ -735,34 +830,41 @@
                                     "legacy",
                                     "utf8"
                                 ],
+                                "description": "Validation scheme applied to the metric and label names",
                                 "default": "legacy"
                             },
                             "metrics": {
                                 "items": {
                                     "properties": {
                                         "name": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "description": "Name of the metric, without its namespace and subsystem"
                                         },
                                         "namespace": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "description": "Namespace of the metric. Uses default_metrics_namespace when empty"
                                         },
                                         "subsystem": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "description": "Subsystem of the metric"
                                         },
                                         "help": {
-                                            "type": "string"
+                                            "type": "string",
+                                            "description": "Help text of the metric"
                                         },
                                         "labels": {
                                             "additionalProperties": {
                                                 "type": "string"
                                             },
-                                            "type": "object"
+                                            "type": "object",
+                                            "description": "Labels of the metric, mapped to the event fields"
                                         },
                                         "const_labels": {
                                             "additionalProperties": {
                                                 "type": "string"
                                             },
-                                            "type": "object"
+                                            "type": "object",
+                                            "description": "Constant labels added to all series of the metric"
                                         }
                                     },
                                     "additionalProperties": false,
@@ -773,7 +875,8 @@
                                     ],
                                     "description": "Metric defines one instrument the sink registers, incremented once per event it records. Counters are the only kind, since an event has no value a gauge or a histogram could take."
                                 },
-                                "type": "array"
+                                "type": "array",
+                                "description": "List of metrics recorded by the sink"
                             }
                         },
                         "additionalProperties": false,
@@ -788,10 +891,12 @@
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "const": "otel"
+                                "const": "otel",
+                                "description": "Sink type"
                             },
                             "endpoint": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Address of the OTLP gRPC receiver, as host:port. An https scheme enables TLS"
                             },
                             "compression": {
                                 "type": "string",
@@ -799,17 +904,20 @@
                                     "none",
                                     "gzip"
                                 ],
+                                "description": "Compression algorithm name",
                                 "default": "gzip"
                             },
                             "headers": {
                                 "additionalProperties": {
                                     "type": "string"
                                 },
-                                "type": "object"
+                                "type": "object",
+                                "description": "Headers sent with all requests. Requires TLS, since all headers are treated as a potentially sensitive value"
                             },
                             "send_timeout": {
                                 "type": "string",
                                 "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "description": "Maximum time of a single delivery attempt",
                                 "default": "5s",
                                 "examples": [
                                     "250ms",
@@ -820,46 +928,59 @@
                             "tls": {
                                 "properties": {
                                     "insecure": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "description": "Connect without TLS"
                                     },
                                     "insecure_skip_verify": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "description": "Skip the server's certificate verification"
                                     },
                                     "min_version": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Minimum TLS version accepted, from 1.0 to 1.3. Defaults to 1.2"
                                     },
                                     "ca_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the CA certificates file, in PEM format. Mutually exclusive with ca_pem"
                                     },
                                     "ca_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "CA certificates data, in PEM format. Mutually exclusive with ca_file"
                                     },
                                     "include_system_ca_certs_pool": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "description": "Trust the system CAs as well as the configured ones, which otherwise replace them"
                                     },
                                     "cert_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the client certificate, in PEM format. Mutually exclusive with cert_pem"
                                     },
                                     "cert_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Client certificate data, in PEM format. Mutually exclusive with cert_file"
                                     },
                                     "key_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the private key file, in PEM format. Mutually exclusive with key_pem"
                                     },
                                     "key_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Private key data, in PEM format. Mutually exclusive with key_file"
                                     },
                                     "server_name": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Server name sent in the TLS SNI extension and verified against the server's certificate. Uses the host of the address when empty"
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the TLS connection"
                             },
                             "batch": {
                                 "properties": {
                                     "max_events": {
                                         "type": "integer",
+                                        "description": "Maximum count of events in a batch. A zero value disables the limit",
                                         "default": 512
                                     },
                                     "max_bytes": {
@@ -873,6 +994,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of a batch in bytes, measured before compression. A zero value disables the limit",
                                         "default": "2Mi",
                                         "examples": [
                                             4096,
@@ -883,6 +1005,7 @@
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time that a batch waits to fill before being sent",
                                         "default": "5s",
                                         "examples": [
                                             "250ms",
@@ -892,7 +1015,8 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the batching strategy"
                             },
                             "queue": {
                                 "properties": {
@@ -907,6 +1031,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of the queue in bytes. When the queue is full, it drops the oldest events",
                                         "default": "32Mi",
                                         "examples": [
                                             4096,
@@ -916,17 +1041,20 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the events queue"
                             },
                             "retry": {
                                 "properties": {
                                     "enabled": {
                                         "type": "boolean",
+                                        "description": "Enable retry of failed event deliveries",
                                         "default": true
                                     },
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time spent retrying a batch before it's dropped",
                                         "default": "30s",
                                         "examples": [
                                             "250ms",
@@ -937,6 +1065,7 @@
                                     "initial_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Time to wait before the first retry",
                                         "default": "500ms",
                                         "examples": [
                                             "250ms",
@@ -947,6 +1076,7 @@
                                     "max_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time to wait between two retries",
                                         "default": "10s",
                                         "examples": [
                                             "250ms",
@@ -956,11 +1086,13 @@
                                     },
                                     "multiplier": {
                                         "type": "number",
+                                        "description": "Factor by which the wait grows after each retry",
                                         "default": 1.5
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the retry strategy"
                             }
                         },
                         "additionalProperties": false,
@@ -975,12 +1107,14 @@
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "const": "stdout"
+                                "const": "stdout",
+                                "description": "Sink type"
                             },
                             "batch": {
                                 "properties": {
                                     "max_events": {
                                         "type": "integer",
+                                        "description": "Maximum count of events in a batch. A zero value disables the limit",
                                         "default": 512
                                     },
                                     "max_bytes": {
@@ -994,6 +1128,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of a batch in bytes, measured before compression. A zero value disables the limit",
                                         "default": "4Mi",
                                         "examples": [
                                             4096,
@@ -1004,6 +1139,7 @@
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time that a batch waits to fill before being sent",
                                         "default": "5s",
                                         "examples": [
                                             "250ms",
@@ -1013,7 +1149,8 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the batching strategy"
                             },
                             "queue": {
                                 "properties": {
@@ -1028,6 +1165,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of the queue in bytes. When the queue is full, it drops the oldest events",
                                         "default": "32Mi",
                                         "examples": [
                                             4096,
@@ -1037,17 +1175,20 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the events queue"
                             },
                             "retry": {
                                 "properties": {
                                     "enabled": {
                                         "type": "boolean",
+                                        "description": "Enable retry of failed event deliveries",
                                         "default": true
                                     },
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time spent retrying a batch before it's dropped",
                                         "default": "30s",
                                         "examples": [
                                             "250ms",
@@ -1058,6 +1199,7 @@
                                     "initial_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Time to wait before the first retry",
                                         "default": "500ms",
                                         "examples": [
                                             "250ms",
@@ -1068,6 +1210,7 @@
                                     "max_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time to wait between two retries",
                                         "default": "10s",
                                         "examples": [
                                             "250ms",
@@ -1077,11 +1220,13 @@
                                     },
                                     "multiplier": {
                                         "type": "number",
+                                        "description": "Factor by which the wait grows after each retry",
                                         "default": 1.5
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the retry strategy"
                             }
                         },
                         "additionalProperties": false,
@@ -1095,13 +1240,16 @@
                         "properties": {
                             "type": {
                                 "type": "string",
-                                "const": "webhook"
+                                "const": "webhook",
+                                "description": "Sink type"
                             },
                             "url": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "URL of the target endpoint. An https scheme enables TLS"
                             },
                             "method": {
                                 "type": "string",
+                                "description": "HTTP method used to emit requests",
                                 "default": "POST"
                             },
                             "format": {
@@ -1112,67 +1260,82 @@
                                     "cloudevents",
                                     "template"
                                 ],
+                                "description": "Format of the request body",
                                 "default": "json-list"
                             },
                             "template": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Template used to render an event with the template format"
                             },
                             "separator": {
-                                "type": "string"
+                                "type": "string",
+                                "description": "Separator used to render events with the template format. Defaults to a newline when unset"
                             },
                             "cloudevents": {
                                 "properties": {
                                     "source": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Value of the source attribute. Uses kem-agent when empty"
                                     },
                                     "type": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Value of the type attribute, required by the cloudevents format"
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the CloudEvents attributes"
                             },
                             "headers": {
                                 "additionalProperties": {
                                     "type": "string"
                                 },
-                                "type": "object"
+                                "type": "object",
+                                "description": "Headers sent with all requests. Requires TLS, since all headers are treated as a potentially sensitive value"
                             },
                             "auth": {
                                 "properties": {
                                     "basic": {
                                         "properties": {
                                             "username": {
-                                                "type": "string"
+                                                "type": "string",
+                                                "description": "Name of the user"
                                             },
                                             "password": {
-                                                "type": "string"
+                                                "type": "string",
+                                                "description": "Password of the user"
                                             }
                                         },
                                         "additionalProperties": false,
                                         "type": "object",
                                         "required": [
                                             "username"
-                                        ]
+                                        ],
+                                        "description": "Configuration of the HTTP basic authentication"
                                     },
                                     "bearer": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Bearer token sent in the Authorization header"
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the request authentication"
                             },
                             "signature": {
                                 "properties": {
                                     "identifier": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Signature scheme, v1 for HMAC-SHA256 or v1a for Ed25519. An empty value disables signing"
                                     },
                                     "secret": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Signing key in base64, prefixed with whsec_ for v1 or whsk_ for v1a"
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the Standard Webhooks signature"
                             },
                             "compression": {
                                 "type": "string",
@@ -1181,11 +1344,13 @@
                                     "gzip",
                                     "zstd"
                                 ],
+                                "description": "Compression algorithm name. A signed request can't be compressed",
                                 "default": "none"
                             },
                             "send_timeout": {
                                 "type": "string",
                                 "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "description": "Maximum time of a single delivery attempt",
                                 "default": "15s",
                                 "examples": [
                                     "250ms",
@@ -1196,46 +1361,59 @@
                             "tls": {
                                 "properties": {
                                     "insecure": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "description": "Connect without TLS"
                                     },
                                     "insecure_skip_verify": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "description": "Skip the server's certificate verification"
                                     },
                                     "min_version": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Minimum TLS version accepted, from 1.0 to 1.3. Defaults to 1.2"
                                     },
                                     "ca_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the CA certificates file, in PEM format. Mutually exclusive with ca_pem"
                                     },
                                     "ca_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "CA certificates data, in PEM format. Mutually exclusive with ca_file"
                                     },
                                     "include_system_ca_certs_pool": {
-                                        "type": "boolean"
+                                        "type": "boolean",
+                                        "description": "Trust the system CAs as well as the configured ones, which otherwise replace them"
                                     },
                                     "cert_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the client certificate, in PEM format. Mutually exclusive with cert_pem"
                                     },
                                     "cert_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Client certificate data, in PEM format. Mutually exclusive with cert_file"
                                     },
                                     "key_file": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Path of the private key file, in PEM format. Mutually exclusive with key_pem"
                                     },
                                     "key_pem": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Private key data, in PEM format. Mutually exclusive with key_file"
                                     },
                                     "server_name": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "description": "Server name sent in the TLS SNI extension and verified against the server's certificate. Uses the host of the address when empty"
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the TLS connection"
                             },
                             "batch": {
                                 "properties": {
                                     "max_events": {
                                         "type": "integer",
+                                        "description": "Maximum count of events in a batch. A zero value disables the limit",
                                         "default": 512
                                     },
                                     "max_bytes": {
@@ -1249,6 +1427,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of a batch in bytes, measured before compression. A zero value disables the limit",
                                         "default": "4Mi",
                                         "examples": [
                                             4096,
@@ -1259,6 +1438,7 @@
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time that a batch waits to fill before being sent",
                                         "default": "5s",
                                         "examples": [
                                             "250ms",
@@ -1268,7 +1448,8 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the batching strategy"
                             },
                             "queue": {
                                 "properties": {
@@ -1283,6 +1464,7 @@
                                                 "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
                                             }
                                         ],
+                                        "description": "Maximum size of the queue in bytes. When the queue is full, it drops the oldest events",
                                         "default": "32Mi",
                                         "examples": [
                                             4096,
@@ -1292,17 +1474,20 @@
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the events queue"
                             },
                             "retry": {
                                 "properties": {
                                     "enabled": {
                                         "type": "boolean",
+                                        "description": "Enable retry of failed event deliveries",
                                         "default": true
                                     },
                                     "timeout": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time spent retrying a batch before it's dropped",
                                         "default": "30s",
                                         "examples": [
                                             "250ms",
@@ -1313,6 +1498,7 @@
                                     "initial_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Time to wait before the first retry",
                                         "default": "500ms",
                                         "examples": [
                                             "250ms",
@@ -1323,6 +1509,7 @@
                                     "max_interval": {
                                         "type": "string",
                                         "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time to wait between two retries",
                                         "default": "10s",
                                         "examples": [
                                             "250ms",
@@ -1332,11 +1519,13 @@
                                     },
                                     "multiplier": {
                                         "type": "number",
+                                        "description": "Factor by which the wait grows after each retry",
                                         "default": 1.5
                                     }
                                 },
                                 "additionalProperties": false,
-                                "type": "object"
+                                "type": "object",
+                                "description": "Configuration of the retry strategy"
                             }
                         },
                         "additionalProperties": false,
@@ -1349,16 +1538,19 @@
                     }
                 ]
             },
-            "type": "object"
+            "type": "object",
+            "description": "Configuration of the sinks, keyed by name"
         },
         "pipelines": {
             "additionalProperties": {
                 "$ref": "#/$defs/pipeline.Config"
             },
-            "type": "object"
+            "type": "object",
+            "description": "Configuration of the pipelines, keyed by name"
         },
         "checkpoint": {
-            "$ref": "#/$defs/config.Checkpoint"
+            "$ref": "#/$defs/config.Checkpoint",
+            "description": "Configuration of the checkpoint"
         }
     },
     "additionalProperties": false,

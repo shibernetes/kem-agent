@@ -9,9 +9,15 @@ import (
 
 // Config defines the configuration of a pipeline.
 type Config struct {
+	// List of watches that feed the pipeline, by name
 	Watches []string `yaml:"watches,omitempty"`
+
+	// List of CEL expressions that filter events. An event must
+	// match all of them to reach the sinks
 	Filters []string `yaml:"filters,omitempty"`
-	Sinks   []string `yaml:"sinks,omitempty"`
+
+	// List of sinks that receive the pipeline's events, by name
+	Sinks []string `yaml:"sinks,omitempty"`
 }
 
 // Validate validates the configuration.

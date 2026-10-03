@@ -36,16 +36,37 @@ var _ sink.Drainable = Config{}
 
 // Config defines the configuration of the Graylog sink.
 type Config struct {
-	Type             string            `yaml:"type"`
-	Host             string            `yaml:"host"`
-	Port             int               `yaml:"port,omitempty"`
-	SourceHost       string            `yaml:"source_host,omitempty"`
+	// Sink type
+	Type string `yaml:"type"`
+
+	// Host name or address of the Graylog server
+	Host string `yaml:"host"`
+
+	// Port of the GELF TCP input on the Graylog server
+	Port int `yaml:"port,omitempty"`
+
+	// Sender name written to the GELF host field. Uses the pod name when
+	// empty
+	SourceHost string `yaml:"source_host,omitempty"`
+
+	// Fields added to all messages. The underscore that GELF requires is
+	// automatically prepended to all field names
 	AdditionalFields map[string]string `yaml:"additional_fields,omitempty"`
-	SendTimeout      units.Duration    `yaml:"send_timeout,omitempty"`
-	TLS              tlsconfig.Config  `yaml:"tls,omitempty"`
-	Batch            sink.BatchConfig  `yaml:"batch,omitempty"`
-	Queue            sink.QueueConfig  `yaml:"queue,omitempty"`
-	Retry            sink.RetryConfig  `yaml:"retry,omitempty"`
+
+	// Maximum time of a single delivery attempt
+	SendTimeout units.Duration `yaml:"send_timeout,omitempty"`
+
+	// Configuration of the TLS connection
+	TLS tlsconfig.Config `yaml:"tls,omitempty"`
+
+	// Configuration of the batching strategy
+	Batch sink.BatchConfig `yaml:"batch,omitempty"`
+
+	// Configuration of the events queue
+	Queue sink.QueueConfig `yaml:"queue,omitempty"`
+
+	// Configuration of the retry strategy
+	Retry sink.RetryConfig `yaml:"retry,omitempty"`
 }
 
 // DefaultConfig returns the default configuration.

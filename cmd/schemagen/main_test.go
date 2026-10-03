@@ -20,10 +20,11 @@ import (
 )
 
 const (
-	configDir  = "../../config"
-	schemaFile = "agent.config.schema.json"
-	metaSchema = "https://json-schema.org/draft/2020-12/schema"
-	defaultKey = "default"
+	configDir      = "../../config"
+	schemaFile     = "agent.config.schema.json"
+	metaSchema     = "https://json-schema.org/draft/2020-12/schema"
+	defaultKey     = "default"
+	descriptionKey = "description"
 )
 
 // testdataDir is resolved at init because generateSchema changes the
@@ -114,6 +115,19 @@ func TestRecordedDefaults(t *testing.T) {
 	}
 }
 
+// TestPropertyDescriptions checks that every property has a description.
+func TestPropertyDescriptions(t *testing.T) {
+	properties := collectProperties(decodeJSON(t, schemaBytes(t)), "")
+	if len(properties) == 0 {
+		t.Fatal("the schema declares no properties")
+	}
+	for _, pointer := range slices.Sorted(maps.Keys(properties)) {
+		if desc, _ := properties[pointer][descriptionKey].(string); desc == "" {
+			t.Errorf("property %s has no description", pointer)
+		}
+	}
+}
+
 func TestSinkSubschemas(t *testing.T) {
 	schemas := oneOfSubschemas(t, dig(decodeJSON(t, schemaBytes(t)), "properties", sinksObjectKey, "additionalProperties"))
 
@@ -196,6 +210,33 @@ func collectDefaults(node any, pointer string) map[string]any {
 		}
 	}
 	return defaults
+}
+
+// collectProperties returns every property a schema declares, indexed
+// by the JSON pointer of the property.
+func collectProperties(node any, pointer string) map[string]map[string]any {
+	properties := make(map[string]map[string]any)
+
+	switch n := node.(type) {
+	case map[string]any:
+		if prop, ok := n["properties"].(map[string]any); ok {
+			for name, child := range prop {
+				if childProp, ok := child.(map[string]any); ok {
+					properties[fmt.Sprintf("%s/properties/%s", pointer, name)] = childProp
+				}
+			}
+		}
+		for key, child := range n {
+			if key != defaultKey {
+				maps.Copy(properties, collectProperties(child, fmt.Sprintf("%s/%s", pointer, key)))
+			}
+		}
+	case []any:
+		for i, child := range n {
+			maps.Copy(properties, collectProperties(child, fmt.Sprintf("%s/%d", pointer, i)))
+		}
+	}
+	return properties
 }
 
 // oneOfSubschemas returns the subschemas a component schema accepts,

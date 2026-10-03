@@ -38,10 +38,15 @@ type Store struct {
 	name      string
 }
 
-// Config defines the configuration for a [Store].
+// Config defines the configuration of a store.
 type Config struct {
-	Type      string `yaml:"type"`
-	Name      string `yaml:"name"`
+	// Store type
+	Type string `yaml:"type"`
+
+	// Name of the ConfigMap containing the checkpoint data
+	Name string `yaml:"name"`
+
+	// Namespace of the ConfigMap. Uses the agent's own namespace when empty
 	Namespace string `yaml:"namespace,omitempty"`
 }
 

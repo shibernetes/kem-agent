@@ -1,8 +1,8 @@
-<h1 align="center">Kubernetes Events Manager</h1>
-
 <p align="center">
-  <img src="docs/assets/kem-icon-color.svg" width="256" alt="Kubernetes Events Manager" />
+  <img src="docs/assets/kem-icon-color.svg" width="180" alt="Kubernetes Events Manager" />
 </p>
+
+<h1 align="center">Kubernetes Events Manager</h1>
 
 <p align="center">
   Kubernetes Events collection and forwarding agent
@@ -17,7 +17,7 @@
 > [!NOTE]
 > The project is in alpha. Until version 1.0, the configuration format is subject to change between releases, and the [release notes](https://github.com/shibernetes/kem-agent/releases) describe each change.
 
-## Contents
+## Table of contents
 
 - [Features](#features)
 - [Requirements](#requirements)

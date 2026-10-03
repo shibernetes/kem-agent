@@ -39,8 +39,10 @@ type Checkpointer struct {
 	done     chan struct{}
 }
 
-// Config defines the configuration for a [Checkpointer].
+// Config defines the configuration of the checkpointer.
 type Config struct {
+	// How often the positions are saved. A save is skipped when no
+	// position moved
 	SaveInterval units.Duration `yaml:"save_interval,omitempty"`
 }
 

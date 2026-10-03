@@ -7,9 +7,19 @@ import (
 
 // Config defines the configuration for the sanitizers applied to every event.
 type Config struct {
-	FieldLimits          FieldLimits          `yaml:"field_limits,omitempty"`
-	LastAppliedConfig    LastAppliedConfig    `yaml:"last_applied_config,omitempty"`
-	MetadataCountLimit   MetadataCountLimit   `yaml:"metadata_count_limit,omitempty"`
+	// Configuration of the sanitizer that shortens long event fields and
+	// object references
+	FieldLimits FieldLimits `yaml:"field_limits,omitempty"`
+
+	// Configuration of the sanitizer that drops the
+	// last-applied-configuration annotation written by kubectl
+	LastAppliedConfig LastAppliedConfig `yaml:"last_applied_config,omitempty"`
+
+	// Configuration of the sanitizer that limits the number of labels and
+	// annotations of an event
+	MetadataCountLimit MetadataCountLimit `yaml:"metadata_count_limit,omitempty"`
+
+	// Configuration of the sanitizer that shortens long annotation values
 	AnnotationValueLimit AnnotationValueLimit `yaml:"annotation_value_limit,omitempty"`
 }
 
@@ -40,16 +50,18 @@ func (c Config) Validate() error {
 	return diag.Prefix(c.AnnotationValueLimit.Validate(), "annotation_value_limit")
 }
 
-// FieldLimits shortens the event string fields events.k8s.io/v1
+// FieldLimits shortens the event string fields using events.k8s.io/v1
 // bounds, and the fields of the object references an event carries,
 // which no API bounds at all.
 type FieldLimits struct {
+	// Enable the sanitizer
 	Enabled bool `yaml:"enabled,omitempty"`
 }
 
 // LastAppliedConfig drops the last-applied-configuration annotation
 // kubectl writes, which mirrors the whole object it was applied to.
 type LastAppliedConfig struct {
+	// Enable the sanitizer
 	Enabled bool `yaml:"enabled,omitempty"`
 }
 
@@ -57,9 +69,14 @@ type LastAppliedConfig struct {
 // keeps. A maximum of zero leaves its own map unbounded, so one of
 // the two can be capped while the other is not.
 type MetadataCountLimit struct {
-	Enabled        bool `yaml:"enabled,omitempty"`
-	MaxLabels      int  `yaml:"max_labels,omitempty"`
-	MaxAnnotations int  `yaml:"max_annotations,omitempty"`
+	// Enable the sanitizer
+	Enabled bool `yaml:"enabled,omitempty"`
+
+	// Maximum count of labels to keep. A zero value preserves all labels
+	MaxLabels int `yaml:"max_labels,omitempty"`
+
+	// Maximum count of annotations to keep. A zero value preserves all annotations
+	MaxAnnotations int `yaml:"max_annotations,omitempty"`
 }
 
 // Validate validates the configuration.
@@ -77,7 +94,11 @@ func (c MetadataCountLimit) Validate() error {
 // A maximum of zero leaves every value intact. It is the only sanitizer
 // that can truncate entirely legitimate data.
 type AnnotationValueLimit struct {
-	Enabled  bool        `yaml:"enabled,omitempty"`
+	// Enable the sanitizer
+	Enabled bool `yaml:"enabled,omitempty"`
+
+	// Maximum size of an annotation value in bytes, beyond which the value
+	// is truncated. A zero value disables the limit
 	MaxBytes units.Bytes `yaml:"max_bytes,omitempty"`
 }
 

@@ -18,11 +18,20 @@ import (
 
 // Config is the root agent configuration.
 type Config struct {
-	Service    Service                    `yaml:"service,omitempty"`
-	Source     source.Config              `yaml:"source"`
-	Sinks      map[string]*Component      `yaml:"sinks"`
-	Pipelines  map[string]pipeline.Config `yaml:"pipelines"`
-	Checkpoint Checkpoint                 `yaml:"checkpoint"`
+	// Configuration of the agent process
+	Service Service `yaml:"service,omitempty"`
+
+	// Configuration of the event source
+	Source source.Config `yaml:"source"`
+
+	// Configuration of the sinks, keyed by name
+	Sinks map[string]*Component `yaml:"sinks"`
+
+	// Configuration of the pipelines, keyed by name
+	Pipelines map[string]pipeline.Config `yaml:"pipelines"`
+
+	// Configuration of the checkpoint
+	Checkpoint Checkpoint `yaml:"checkpoint"`
 
 	doc           ast.Node
 	pipelineNodes map[string]ast.Node

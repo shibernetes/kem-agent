@@ -37,41 +37,83 @@ var _ sink.Drainable = Config{}
 
 // Config defines the configuration of the webhook sink.
 type Config struct {
-	Type        string                   `yaml:"type"`
-	URL         string                   `yaml:"url"`
-	Method      string                   `yaml:"method,omitempty"`
-	Format      Format                   `yaml:"format,omitempty"`
-	Template    string                   `yaml:"template,omitempty"`
-	Separator   *string                  `yaml:"separator,omitempty"`
-	CloudEvents CloudEvents              `yaml:"cloudevents,omitempty"`
-	Headers     map[string]opaque.String `yaml:"headers,omitempty"`
-	Auth        Auth                     `yaml:"auth,omitempty"`
-	Signature   Signature                `yaml:"signature,omitempty"`
-	Compression compress.Algorithm       `yaml:"compression,omitempty"`
-	SendTimeout units.Duration           `yaml:"send_timeout,omitempty"`
-	TLS         *tlsconfig.Config        `yaml:"tls,omitempty"`
-	Batch       sink.BatchConfig         `yaml:"batch,omitempty"`
-	Queue       sink.QueueConfig         `yaml:"queue,omitempty"`
-	Retry       sink.RetryConfig         `yaml:"retry,omitempty"`
+	// Sink type
+	Type string `yaml:"type"`
+
+	// URL of the target endpoint. An https scheme enables TLS
+	URL string `yaml:"url"`
+
+	// HTTP method used to emit requests
+	Method string `yaml:"method,omitempty"`
+
+	// Format of the request body
+	Format Format `yaml:"format,omitempty"`
+
+	// Template used to render an event with the template format
+	Template string `yaml:"template,omitempty"`
+
+	// Separator used to render events with the template format. Defaults
+	// to a newline when unset
+	Separator *string `yaml:"separator,omitempty"`
+
+	// Configuration of the CloudEvents attributes
+	CloudEvents CloudEvents `yaml:"cloudevents,omitempty"`
+
+	// Headers sent with all requests. Requires TLS, since all headers
+	// are treated as a potentially sensitive value
+	Headers map[string]opaque.String `yaml:"headers,omitempty"`
+
+	// Configuration of the request authentication
+	Auth Auth `yaml:"auth,omitempty"`
+
+	// Configuration of the Standard Webhooks signature
+	Signature Signature `yaml:"signature,omitempty"`
+
+	// Compression algorithm name. A signed request can't be compressed
+	Compression compress.Algorithm `yaml:"compression,omitempty"`
+
+	// Maximum time of a single delivery attempt
+	SendTimeout units.Duration `yaml:"send_timeout,omitempty"`
+
+	// Configuration of the TLS connection
+	TLS *tlsconfig.Config `yaml:"tls,omitempty"`
+
+	// Configuration of the batching strategy
+	Batch sink.BatchConfig `yaml:"batch,omitempty"`
+
+	// Configuration of the events queue
+	Queue sink.QueueConfig `yaml:"queue,omitempty"`
+
+	// Configuration of the retry strategy
+	Retry sink.RetryConfig `yaml:"retry,omitempty"`
 }
 
 // BasicAuth holds HTTP basic auth credentials.
 type BasicAuth struct {
-	Username string        `yaml:"username"`
+	// Name of the user
+	Username string `yaml:"username"`
+
+	// Password of the user
 	Password opaque.String `yaml:"password,omitempty"`
 }
 
 // CloudEvents holds the attributes of a CloudEvents batch.
 type CloudEvents struct {
+	// Value of the source attribute. Uses kem-agent when empty
 	Source string `yaml:"source,omitempty"`
-	Type   string `yaml:"type,omitempty"`
+
+	// Value of the type attribute, required by the cloudevents format
+	Type string `yaml:"type,omitempty"`
 }
 
 // Auth configures request authentication.
 // Basic auth and bearer are mutually exclusive, and leaving both
 // empty sends unauthenticated requests.
 type Auth struct {
-	Basic  *BasicAuth    `yaml:"basic,omitempty"`
+	// Configuration of the HTTP basic authentication
+	Basic *BasicAuth `yaml:"basic,omitempty"`
+
+	// Bearer token sent in the Authorization header
 	Bearer opaque.String `yaml:"bearer,omitempty"`
 }
 

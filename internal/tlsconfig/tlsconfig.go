@@ -27,17 +27,42 @@ var tlsVersions = map[string]uint16{
 // Config is a declarative TLS configuration that [Config.Build] turns into
 // a [tls.Config]. It carries certificate and verification settings only.
 type Config struct {
-	Insecure                 bool   `yaml:"insecure,omitempty"`
-	InsecureSkipVerify       bool   `yaml:"insecure_skip_verify,omitempty"`
-	MinVersion               string `yaml:"min_version,omitempty"`
-	CAFile                   string `yaml:"ca_file,omitempty"`
-	CAPEM                    string `yaml:"ca_pem,omitempty"`
-	IncludeSystemCACertsPool bool   `yaml:"include_system_ca_certs_pool,omitempty"`
-	CertFile                 string `yaml:"cert_file,omitempty"`
-	CertPEM                  string `yaml:"cert_pem,omitempty"`
-	KeyFile                  string `yaml:"key_file,omitempty"`
-	KeyPEM                   string `yaml:"key_pem,omitempty"`
-	ServerName               string `yaml:"server_name,omitempty"`
+	// Connect without TLS
+	Insecure bool `yaml:"insecure,omitempty"`
+
+	// Skip the server's certificate verification
+	InsecureSkipVerify bool `yaml:"insecure_skip_verify,omitempty"`
+
+	// Minimum TLS version accepted, from 1.0 to 1.3. Defaults to 1.2
+	MinVersion string `yaml:"min_version,omitempty"`
+
+	// Path of the CA certificates file, in PEM format. Mutually exclusive
+	// with ca_pem
+	CAFile string `yaml:"ca_file,omitempty"`
+
+	// CA certificates data, in PEM format. Mutually exclusive with ca_file
+	CAPEM string `yaml:"ca_pem,omitempty"`
+
+	// Trust the system CAs as well as the configured ones, which otherwise
+	// replace them
+	IncludeSystemCACertsPool bool `yaml:"include_system_ca_certs_pool,omitempty"`
+
+	// Path of the client certificate, in PEM format. Mutually exclusive
+	// with cert_pem
+	CertFile string `yaml:"cert_file,omitempty"`
+
+	// Client certificate data, in PEM format. Mutually exclusive with cert_file
+	CertPEM string `yaml:"cert_pem,omitempty"`
+
+	// Path of the private key file, in PEM format. Mutually exclusive with key_pem
+	KeyFile string `yaml:"key_file,omitempty"`
+
+	// Private key data, in PEM format. Mutually exclusive with key_file
+	KeyPEM string `yaml:"key_pem,omitempty"`
+
+	// Server name sent in the TLS SNI extension and verified against the
+	// server's certificate. Uses the host of the address when empty
+	ServerName string `yaml:"server_name,omitempty"`
 }
 
 // Validate validates the configuration.

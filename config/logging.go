@@ -13,8 +13,12 @@ import (
 
 // Logging configures the logger output format and level.
 type Logging struct {
+	// Output format of the logs
 	Format LogFormat `yaml:"format,omitempty"`
-	Level  LogLevel  `yaml:"level,omitempty"`
+
+	// Lowest level logged. The agent logs nothing below info,
+	// so debug level additionally emits client-go's verbose logs
+	Level LogLevel `yaml:"level,omitempty"`
 }
 
 // Validate validates the configuration.

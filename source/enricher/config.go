@@ -20,26 +20,29 @@ const (
 // Config defines the configuration for the enrichment of the object
 // an event regards.
 type Config struct {
-	// Resources lists the resources whose metadata is cached, written
-	// as resource.group, where a name with no group belongs to the
-	// core group.
+	// List of resources whose objects are cached to enrich events,
+	// as resource.group, such as pods or deployments.apps
 	Resources []string `yaml:"resources,omitempty"`
 
-	// SyncTimeout bounds the initial sync of every cache.
+	// Maximum time for the initial sync of the caches. The agent stops
+	// once it elapses
 	SyncTimeout units.Duration `yaml:"sync_timeout,omitempty"`
 
-	// Labels selects the labels copied onto an enriched object.
+	// Configuration of the labels copied from the enriched object
 	Labels Allowlist `yaml:"labels,omitempty"`
 
-	// Annotations selects the annotations copied onto an enriched object.
+	// Configuration of the annotations copied from the enriched object
 	Annotations Allowlist `yaml:"annotations,omitempty"`
 }
 
 // Allowlist lists the metadata keys copied onto an enriched object.
 // An empty list keeps every key. To reject all, set Enabled to false.
 type Allowlist struct {
-	Enabled bool     `yaml:"enabled,omitempty"`
-	Keys    []string `yaml:"keys,omitempty"`
+	// Enable the allowlist
+	Enabled bool `yaml:"enabled,omitempty"`
+
+	// List of keys to keep. An empty list preserves all keys
+	Keys []string `yaml:"keys,omitempty"`
 }
 
 // DefaultConfig returns the default enrichment configuration.

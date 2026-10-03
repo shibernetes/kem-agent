@@ -134,9 +134,11 @@ func expandComponents(d defaulter, schema *jsonschema.Schema) error {
 	if !ok {
 		return errors.New("the schema has no checkpoint definition")
 	}
-	if _, ok := checkpoint.Properties.Get(storeObjectKey); !ok {
+	store, ok := checkpoint.Properties.Get(storeObjectKey)
+	if !ok {
 		return fmt.Errorf("the checkpoint definition has no %q property", storeObjectKey)
 	}
+	storeSchema.Description = store.Description
 	checkpoint.Properties.Set(storeObjectKey, storeSchema)
 	delete(schema.Definitions, defName[config.Component]())
 
@@ -217,8 +219,13 @@ func (d defaulter) set(prop *jsonschema.Schema, v reflect.Value) {
 		return
 	}
 	if d.references[prop.Ref] > 1 {
+		description := prop.Description
+
 		*prop = *d.reflector.Reflect(v.Interface())
 		prop.Version = ""
+		if description != "" {
+			prop.Description = description
+		}
 		target = prop
 	}
 	d.apply(target, v)

@@ -33,15 +33,16 @@ type Store struct {
 
 // Config defines the configuration for a [Store].
 type Config struct {
+	// Store type
 	Type string `yaml:"type"`
+
+	// Path of the checkpoint file
 	Path string `yaml:"path"`
 
-	// CreateDirectory creates the directory holding the state file rather
-	// than failing when it does not exist.
+	// Create the checkpoint file's directory when it doesn't exist
 	CreateDirectory bool `yaml:"create_directory,omitempty"`
 
-	// DirectoryMode is the permission a created directory takes, and is
-	// written in octal, with the leading zero.
+	// Permissions of the created directory, in octal notation with a leading zero
 	DirectoryMode os.FileMode `yaml:"directory_mode,omitempty"`
 }
 

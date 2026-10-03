@@ -20,14 +20,24 @@ const (
 var _ sink.Drainable = Config{}
 
 // Config defines the configuration of the file sink.
-// Mode is the permission a created file takes, written in octal form
-// with a leading zero. An existing file keeps the permission it has.
 type Config struct {
-	Type  string           `yaml:"type"`
-	Path  string           `yaml:"path"`
-	Mode  fs.FileMode      `yaml:"mode,omitempty"`
+	// Sink type
+	Type string `yaml:"type"`
+
+	// Absolute path of the file
+	Path string `yaml:"path"`
+
+	// Permissions applied to a created file, in octal notation with a
+	// leading zero. An existing file keeps its permissions
+	Mode fs.FileMode `yaml:"mode,omitempty"`
+
+	// Configuration of the batching strategy
 	Batch sink.BatchConfig `yaml:"batch,omitempty"`
+
+	// Configuration of the events queue
 	Queue sink.QueueConfig `yaml:"queue,omitempty"`
+
+	// Configuration of the retry strategy
 	Retry sink.RetryConfig `yaml:"retry,omitempty"`
 }
 

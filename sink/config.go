@@ -68,9 +68,15 @@ type Drainable interface {
 // payload. A batch closes on whichever limit binds first, so a limit
 // left at zero is simply ignored.
 type BatchConfig struct {
-	MaxEvents int            `yaml:"max_events,omitempty"`
-	MaxBytes  units.Bytes    `yaml:"max_bytes,omitempty"`
-	Timeout   units.Duration `yaml:"timeout,omitempty"`
+	// Maximum count of events in a batch. A zero value disables the limit
+	MaxEvents int `yaml:"max_events,omitempty"`
+
+	// Maximum size of a batch in bytes, measured before compression.
+	// A zero value disables the limit
+	MaxBytes units.Bytes `yaml:"max_bytes,omitempty"`
+
+	// Maximum time that a batch waits to fill before being sent
+	Timeout units.Duration `yaml:"timeout,omitempty"`
 }
 
 // DefaultBatchConfig returns the default batch config.
@@ -105,6 +111,8 @@ func (c BatchConfig) Validate() error {
 // reservation, so a queue's memory usage follows what it holds, and it
 // drops its oldest frames only once it is full.
 type QueueConfig struct {
+	// Maximum size of the queue in bytes. When the queue is full,
+	// it drops the oldest events
 	MaxBytes units.Bytes `yaml:"max_bytes,omitempty"`
 }
 
@@ -126,11 +134,20 @@ func (c QueueConfig) Validate() error {
 
 // RetryConfig configures how a sink's failed deliveries are reattempted.
 type RetryConfig struct {
-	Enabled         bool           `yaml:"enabled,omitempty"`
-	Timeout         units.Duration `yaml:"timeout,omitempty"`
+	// Enable retry of failed event deliveries
+	Enabled bool `yaml:"enabled,omitempty"`
+
+	// Maximum time spent retrying a batch before it's dropped
+	Timeout units.Duration `yaml:"timeout,omitempty"`
+
+	// Time to wait before the first retry
 	InitialInterval units.Duration `yaml:"initial_interval,omitempty"`
-	MaxInterval     units.Duration `yaml:"max_interval,omitempty"`
-	Multiplier      float64        `yaml:"multiplier,omitempty"`
+
+	// Maximum time to wait between two retries
+	MaxInterval units.Duration `yaml:"max_interval,omitempty"`
+
+	// Factor by which the wait grows after each retry
+	Multiplier float64 `yaml:"multiplier,omitempty"`
 }
 
 // DefaultRetryConfig returns the default retry config

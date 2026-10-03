@@ -20,29 +20,54 @@ const (
 
 // Service is the configuration of the agent service.
 type Service struct {
-	ClusterName     string         `yaml:"cluster_name,omitempty"`
+	// Name of the cluster
+	ClusterName string `yaml:"cluster_name,omitempty"`
+
+	// Maximum time to deliver the pending events and save the positions
+	// when the agent shuts down
 	ShutdownTimeout units.Duration `yaml:"shutdown_timeout,omitempty"`
-	CELEvalTimeout  units.Duration `yaml:"cel_eval_timeout,omitempty"`
-	HotReload       bool           `yaml:"hot_reload,omitempty"`
-	HTTPServer      HTTPServer     `yaml:"http_server,omitempty"`
-	MetricsServer   MetricsServer  `yaml:"metrics_server,omitempty"`
-	PprofServer     PprofServer    `yaml:"pprof_server,omitempty"`
-	Logging         Logging        `yaml:"logging,omitempty"`
+
+	// Maximum time to evaluate one event against the filters of all
+	// pipelines that read it
+	CELEvalTimeout units.Duration `yaml:"cel_eval_timeout,omitempty"`
+
+	// Enable hot reload of the filters. Other changes require a restart
+	HotReload bool `yaml:"hot_reload,omitempty"`
+
+	// Configuration of the HTTP server for the health probes and the
+	// reload endpoint
+	HTTPServer HTTPServer `yaml:"http_server,omitempty"`
+
+	// Configuration of the HTTP server for the Prometheus metrics
+	MetricsServer MetricsServer `yaml:"metrics_server,omitempty"`
+
+	// Configuration of the HTTP server for the pprof and memory debug
+	// endpoints
+	PprofServer PprofServer `yaml:"pprof_server,omitempty"`
+
+	// Configuration of the agent's logs
+	Logging Logging `yaml:"logging,omitempty"`
 }
 
 // HTTPServer configures the HTTP server that serves the liveness and
 // readiness probes and the config reload endpoint.
 type HTTPServer struct {
+	// Address to listen on, as host:port. An empty host listens on all
+	// interfaces
 	Addr string `yaml:"addr,omitempty"`
 }
 
 // MetricsServer configures the HTTP server that serves the Prometheus metrics.
 type MetricsServer struct {
+	// Address to listen on, as host:port. An empty host listens on all
+	// interfaces
 	Addr string `yaml:"addr,omitempty"`
 }
 
 // PprofServer configures the listener serving the net/http/pprof handlers.
 type PprofServer struct {
+	// Address to listen on, as host:port. An empty value disables the
+	// pprof server
 	Addr string `yaml:"addr,omitempty"`
 }
 
