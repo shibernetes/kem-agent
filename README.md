@@ -47,7 +47,7 @@
 
 ## Architecture
 
-The agent watches events from the API server, then sanitizes and enriches them. Each pipeline filters the events with CEL rules and passes the matching ones to its sinks. Every sink has its own queue, so a slow backend doesn't hold up the other sinks. A drainer reads the queue and sends events to the backend in batches, retrying when it fails. The metrics sink has no queue and counts events as they arrive.
+The agent watches events from the APIServer, then sanitizes and enriches them. Each pipeline filters the events with CEL rules and passes the matching ones to its sinks. Every sink has its own queue, so a slow backend doesn't hold up the other sinks. A drainer reads the queue and sends events to the backend in batches, retrying when it fails. The metrics sink has no queue and counts events as they arrive.
 
 ```mermaid
 flowchart TD
@@ -95,13 +95,13 @@ flowchart TD
 
 ## Requirements
 
-- Kubernetes 1.27 or later, with the [`WatchList` feature gate](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#WatchList) enabled
-- Helm 3.8 or later, to install the chart from an [OCI registry](https://helm.sh/docs/topics/registries/)
-
 > [!IMPORTANT]
-> The agent reads events with [streaming lists](https://kubernetes.io/docs/reference/using-api/api-concepts/#streaming-lists), which the API server serves only when the `WatchList` feature gate is enabled. The gate is enabled by default in Kubernetes 1.32 and in 1.34 or later. On 1.27 through 1.31 and on 1.33, [enable it in the API server](https://kubernetes.io/docs/tasks/administer-cluster/configure-feature-gates/). Without it, the agent stops at its first watch with an error saying that the API server doesn't serve initial events.
+> The agent reads events with [streaming lists](https://kubernetes.io/docs/reference/using-api/api-concepts/#streaming-lists), which the APIServer serves only when the `WatchList` feature gate is enabled. The gate is [enabled by default in Kubernetes 1.32 and in 1.34 or later](https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/). On 1.27 through 1.31 and on 1.33, [enable it in the APIServer](https://kubernetes.io/docs/tasks/administer-cluster/configure-feature-gates/). Without it, the agent fails to establish watches, with an error saying that the `sendInitialEvents` list option is forbidden for a watch without the feature gate.
 >
-> To check a running cluster, look for `kubernetes_feature_enabled{name="WatchList"}` in the API server's `/metrics`.
+> To check a running cluster, look for `kubernetes_feature_enabled{name="WatchList"}` in the APIServer's `/metrics`.
+
+- Kubernetes 1.27 or later
+- Helm 3.8 or later, to install the chart from an [OCI registry](https://helm.sh/docs/topics/registries/)
 
 ## Release artifacts
 
@@ -162,7 +162,7 @@ Outside a pod, the binary uses your current kubeconfig context, or the kubeconfi
 
 A configuration has three main parts:
 
-- The `source.watches` list sets the namespaces to read events from. A watch with no namespace reads all of them. A watch can also take a label or field selector, which the API server applies before it sends the events.
+- The `source.watches` list sets the namespaces to read events from. A watch with no namespace reads all of them. A watch can also take a label or field selector, which the APIServer applies before it sends the events.
 - The `sinks` map declares each destination once, by name.
 - The `pipelines` map connects the two. Each pipeline reads from every watch, or only from the ones in its own `watches` list. It keeps the events that pass all of its `filters`, and sends them to its `sinks`.
 
@@ -273,4 +273,4 @@ For the full list of the agent's metrics, see [docs/metrics.md](docs/metrics.md)
 
 [MIT](LICENSE)
 
-[^event-ttl]: The API server's `--event-ttl` flag sets how long Events are kept, and it defaults to one hour. See the [kube-apiserver reference](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/).
+[^event-ttl]: The APIServer's `--event-ttl` flag sets how long Events are kept, and it defaults to one hour. See the [kube-apiserver reference](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/).
