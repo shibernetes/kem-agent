@@ -20,6 +20,7 @@
 ## Table of contents
 
 - [Features](#features)
+- [Architecture](#architecture)
 - [Requirements](#requirements)
 - [Release artifacts](#release-artifacts)
 - [Install](#install)
@@ -43,6 +44,54 @@
 - **Sanitizers.** Keep oversized events out of your backends by shortening long fields, capping labels and annotations, trimming long annotation values, and dropping kubectl's `last-applied-configuration` annotation.
 - **Checkpoints.** Resume where the agent left off after a restart or an upgrade, with its progress saved in a ConfigMap or a file.
 - **Hot reload.** Update filters without restarting the agent.
+
+## Architecture
+
+The agent watches events from the API server, then sanitizes and enriches them. Each pipeline filters the events with CEL rules and passes the matching ones to its sinks. Every sink has its own queue, so a slow backend doesn't hold up the other sinks. A drainer reads the queue and sends events to the backend in batches, retrying when it fails. The metrics sink has no queue and counts events as they arrive.
+
+```mermaid
+flowchart TD
+  k8s[Kubernetes APIServer]
+
+  subgraph agent [kem-agent]
+    checkpointer[Checkpointer] -->|writes| store[(Checkpoint<br>Store)]
+    informer[Informer]
+    cache[(Informer cache)]
+    source[Source] --> sanitizers[Sanitizers] --> enricher[Enricher]
+    pipelines[Pipelines]
+    queue[Queue] --> drainer[Drainer]
+    metricsSink[Metrics sink]
+  end
+
+  subgraph sinks [Sinks]
+    direction TB
+    otel[OTel Collector]
+    graylog[Graylog]
+    hook[HTTP endpoint]
+    stdout[stdout]
+    file[File]
+  end
+
+  source -.->|read positions| checkpointer
+  k8s -->|event watches| source
+  k8s -.->|sync object metadata| informer
+  enricher --> pipelines
+  enricher -.->|lookup| cache
+  informer -.->|write| cache
+  pipelines --> queue
+  pipelines --> metricsSink
+  drainer --> sinks
+  metricsSink -.->|scraped on /metrics| prom[Prometheus]
+
+  classDef blue fill:#3b82f61f,stroke:#3b82f6,stroke-width:2px
+  classDef purple fill:#8b5cf61f,stroke:#8b5cf6,stroke-width:2px
+  classDef orange fill:#f973161f,stroke:#f97316,stroke-width:2px
+  class metricsSink,otel,graylog,hook,stdout,file blue
+  class k8s purple
+  class prom orange
+  style agent fill:transparent,stroke-width:0.75px
+  style sinks fill:transparent,stroke-width:0.75px
+```
 
 ## Requirements
 
