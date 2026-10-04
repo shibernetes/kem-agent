@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
-	"strings"
 
 	"github.com/invopop/jsonschema"
 
 	"github.com/shibernetes/kem-agent/config/diag"
+	"github.com/shibernetes/kem-agent/internal/enum"
 )
 
 // Logging configures the logger output format and level.
@@ -57,21 +57,13 @@ func (f LogFormat) Validate() error {
 	if slices.Contains(logFormats, f) {
 		return nil
 	}
-	return fmt.Errorf("unknown format %q, allowed values are %s", f, strings.Join(logFormatNames(), ", "))
+	return fmt.Errorf("unknown format %q, allowed values are %s", f, enum.Join(logFormats))
 }
 
 // JSONSchema satisfies the [github.com/invopop/jsonschema] reflector.
 // It describes the supported formats, in the JSON Schema spec.
 func (LogFormat) JSONSchema() *jsonschema.Schema {
-	enum := make([]any, len(logFormats))
-	for i, name := range logFormatNames() {
-		enum[i] = name
-	}
-	return &jsonschema.Schema{
-		Type:        "string",
-		Enum:        enum,
-		Description: "The log output format.",
-	}
+	return enum.Schema(logFormats)
 }
 
 // LogLevel selects the logging level.
@@ -101,7 +93,7 @@ func (l LogLevel) Validate() error {
 	if slices.Contains(logLevels, l) {
 		return nil
 	}
-	return fmt.Errorf("unknown level %q, allowed values are %s", l, strings.Join(logLevelNames(), ", "))
+	return fmt.Errorf("unknown level %q, allowed values are %s", l, enum.Join(logLevels))
 }
 
 // Level implements the [slog.Leveler] interface.
@@ -121,29 +113,5 @@ func (l LogLevel) Level() slog.Level {
 // JSONSchema satisfies the [github.com/invopop/jsonschema] reflector.
 // It describes the supported levels, in the JSON Schema spec.
 func (LogLevel) JSONSchema() *jsonschema.Schema {
-	enum := make([]any, len(logLevels))
-	for i, name := range logLevelNames() {
-		enum[i] = name
-	}
-	return &jsonschema.Schema{
-		Type:        "string",
-		Enum:        enum,
-		Description: "The log level.",
-	}
-}
-
-func logFormatNames() []string {
-	names := make([]string, len(logFormats))
-	for i, f := range logFormats {
-		names[i] = f.String()
-	}
-	return names
-}
-
-func logLevelNames() []string {
-	names := make([]string, len(logLevels))
-	for i, l := range logLevels {
-		names[i] = l.String()
-	}
-	return names
+	return enum.Schema(logLevels)
 }

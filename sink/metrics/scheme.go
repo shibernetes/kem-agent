@@ -3,10 +3,11 @@ package metrics
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/invopop/jsonschema"
 	"github.com/prometheus/common/model"
+
+	"github.com/shibernetes/kem-agent/internal/enum"
 )
 
 // NameValidationScheme determines how a metric name and its label names are
@@ -40,7 +41,7 @@ func (s NameValidationScheme) Validate() error {
 		return nil
 	}
 	return fmt.Errorf("unknown metric name validation scheme %q, allowed values are %s",
-		s, strings.Join(schemeNames(), ", "))
+		s, enum.Join(nameValidationSchemes))
 }
 
 // ValidMetricName reports whether name is a metric name the scheme accepts.
@@ -66,21 +67,5 @@ func (s NameValidationScheme) scheme() model.ValidationScheme {
 // JSONSchema satisfies the [github.com/invopop/jsonschema] reflector.
 // It describes the supported schemes, in the JSON Schema spec.
 func (NameValidationScheme) JSONSchema() *jsonschema.Schema {
-	enum := make([]any, len(nameValidationSchemes))
-	for i, name := range schemeNames() {
-		enum[i] = name
-	}
-	return &jsonschema.Schema{
-		Type:        "string",
-		Enum:        enum,
-		Description: "The character set allowed in metric and label names.",
-	}
-}
-
-func schemeNames() []string {
-	names := make([]string, len(nameValidationSchemes))
-	for i, s := range nameValidationSchemes {
-		names[i] = s.String()
-	}
-	return names
+	return enum.Schema(nameValidationSchemes)
 }

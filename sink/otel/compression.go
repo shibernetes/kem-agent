@@ -3,9 +3,10 @@ package otel
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/invopop/jsonschema"
+
+	"github.com/shibernetes/kem-agent/internal/enum"
 )
 
 // A Compression represents a request compression algorithm.
@@ -30,27 +31,11 @@ func (c Compression) Validate() error {
 	if slices.Contains(compressions, c) {
 		return nil
 	}
-	return fmt.Errorf("unknown algorithm %q, allowed values are %s", c, strings.Join(compressionNames(), ", "))
+	return fmt.Errorf("unknown algorithm %q, allowed values are %s", c, enum.Join(compressions))
 }
 
 // JSONSchema satisfies the [github.com/invopop/jsonschema] reflector.
 // It describes the supported algorithms, in the JSON Schema spec.
 func (Compression) JSONSchema() *jsonschema.Schema {
-	enum := make([]any, len(compressions))
-	for i, name := range compressionNames() {
-		enum[i] = name
-	}
-	return &jsonschema.Schema{
-		Type:        "string",
-		Enum:        enum,
-		Description: "The compression algorithm name.",
-	}
-}
-
-func compressionNames() []string {
-	names := make([]string, len(compressions))
-	for i, c := range compressions {
-		names[i] = string(c)
-	}
-	return names
+	return enum.Schema(compressions)
 }

@@ -3,9 +3,10 @@ package webhook
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/invopop/jsonschema"
+
+	"github.com/shibernetes/kem-agent/internal/enum"
 )
 
 // Format selects how the events of a batch compose into a request body.
@@ -38,27 +39,11 @@ func (f Format) Validate() error {
 	if slices.Contains(formats, f) {
 		return nil
 	}
-	return fmt.Errorf("unknown format %q, allowed values are %s", f, strings.Join(formatNames(), ", "))
+	return fmt.Errorf("unknown format %q, allowed values are %s", f, enum.Join(formats))
 }
 
 // JSONSchema satisfies the [github.com/invopop/jsonschema] reflector.
 // It describes the supported formats, in the JSON Schema spec.
 func (Format) JSONSchema() *jsonschema.Schema {
-	enum := make([]any, len(formats))
-	for i, name := range formatNames() {
-		enum[i] = name
-	}
-	return &jsonschema.Schema{
-		Type:        "string",
-		Enum:        enum,
-		Description: "The format the request body is composed in.",
-	}
-}
-
-func formatNames() []string {
-	names := make([]string, len(formats))
-	for i, f := range formats {
-		names[i] = string(f)
-	}
-	return names
+	return enum.Schema(formats)
 }

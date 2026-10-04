@@ -93,8 +93,7 @@
             "enum": [
                 "json",
                 "text"
-            ],
-            "description": "The log output format."
+            ]
         },
         "config.LogLevel": {
             "type": "string",
@@ -103,8 +102,7 @@
                 "info",
                 "warn",
                 "error"
-            ],
-            "description": "The log level."
+            ]
         },
         "config.Logging": {
             "properties": {
