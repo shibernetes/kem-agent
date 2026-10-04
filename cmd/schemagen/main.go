@@ -99,7 +99,7 @@ func generate(p string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal schema: %w", err)
 	}
-	if err := os.WriteFile(filepath.Clean(p), append(b, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Clean(p), append(b, '\n'), 0o644); err != nil { //nolint:gosec
 		return fmt.Errorf("failed to write schema file %q: %w", p, err)
 	}
 	return nil
