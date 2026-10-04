@@ -57,7 +57,7 @@ func New(name string, cfg Config, meta identity.AgentMetadata) *Sink {
 		metadata: exportMetadata(cfg),
 		opts:     opts,
 		encoder:  newEncoder(meta),
-		framer:   framer{},
+		framer:   newFramer(),
 	}
 }
 

@@ -20,7 +20,7 @@ const (
 
 var (
 	_ sink.Encoder = (*encoder)(nil)
-	_ sink.Framer  = framer{}
+	_ sink.Framer  = (*framer)(nil)
 )
 
 // An encoder writes an event as one [logspb.ResourceLogs], with its
@@ -64,22 +64,29 @@ func (e *encoder) AppendEvent(dst []byte, ev *event.Event) []byte {
 	return frame
 }
 
-// A framer joins frames into an export request.
-// No envelope is needed since each frame already has a field tag and
-// repeated fields can simply be concatenated.
-type framer struct{}
+// A framer joins frames into an export request. No envelope is needed,
+// since each frame already has a field tag and repeated fields can be
+// concatenated. The frames that share a resource are compacted together.
+type framer struct {
+	compactor compactor
+}
+
+func newFramer() *framer {
+	return &framer{compactor: newCompactor()}
+}
 
 // Separator implements the [sink.Framer] interface.
-func (framer) Separator() []byte {
+func (*framer) Separator() []byte {
 	return nil
 }
 
 // Compose implements the [sink.Framer] interface.
-func (framer) Compose(dst, frames []byte, _ int) []byte {
-	return append(dst, frames...)
+// The request is shorter than the original frames when compacted.
+func (f *framer) Compose(dst, frames []byte, _ int) []byte {
+	return f.compactor.compact(dst, frames)
 }
 
 // Fixed implements the [sink.Framer] interface.
-func (framer) Fixed() int {
+func (*framer) Fixed() int {
 	return 0
 }

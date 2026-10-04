@@ -105,23 +105,24 @@ func TestAppendEventDropsUnencodableEvent(t *testing.T) {
 	}
 }
 
-// TestFramerAppendsFrames asserts that composing a batch adds no envelope of its own.
-func TestFramerAppendsFrames(t *testing.T) {
+// TestFramerKeepsUnreadableBytes asserts that bytes that aren't frames
+// are appended to the buffer without modifications.
+func TestFramerKeepsUnreadableBytes(t *testing.T) {
 	frames := []byte("two-frames")
 
-	got := framer{}.Compose([]byte("head"), frames, 2)
+	got := newFramer().Compose([]byte("head"), frames, 2)
 	if string(got) != "head"+string(frames) {
-		t.Errorf("got %q, want the frames appended to the buffer", got)
+		t.Errorf("got %q, want the bytes appended to the buffer", got)
 	}
 }
 
-// TestFramerSizeIsExact asserts that a composed payload measures exactly
-// what the drainer computes from the envelope, the frame lengths and the
-// separators.
-func TestFramerSizeIsExact(t *testing.T) {
+// TestFramerSizeIsAtMostComputed asserts that a composed payload is
+// never bigger than what the drainer computes from the envelope, the
+// frame lengths and the separators.
+func TestFramerSizeIsAtMostComputed(t *testing.T) {
 	var (
 		enc    = newEncoder(testAgentMetadata())
-		f      = framer{}
+		f      = newFramer()
 		events = []*event.Event{testEvent(), fullEvent(), testEvent()}
 		frames []byte
 		sum    int
@@ -133,8 +134,8 @@ func TestFramerSizeIsExact(t *testing.T) {
 	}
 	want := f.Fixed() + sum + (len(events)-1)*len(f.Separator())
 
-	if got := len(f.Compose(nil, frames, len(events))); got != want {
-		t.Errorf("got %d bytes, want %d", got, want)
+	if got := len(f.Compose(nil, frames, len(events))); got > want {
+		t.Errorf("got %d bytes, want at most %d", got, want)
 	}
 }
 

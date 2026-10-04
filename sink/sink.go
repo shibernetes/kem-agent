@@ -74,7 +74,8 @@ type Framer interface {
 	Separator() []byte
 
 	// Compose wraps the accumulated frames into dst, and returns
-	// the extended buffer.
+	// the extended buffer. It may write fewer bytes than the frames,
+	// to compact them for example, but never more.
 	Compose(dst, frames []byte, n int) []byte
 
 	// Fixed returns the total bytes the wrapping adds,

@@ -6,7 +6,7 @@ import (
 	"time"
 	"unsafe"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.39.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.43.0"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
 	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
@@ -66,6 +66,7 @@ func newRecord(meta identity.AgentMetadata) *record {
 // is marshaled from. The result is valid until the next call.
 func (r *record) fill(ev *event.Event, observed time.Time) *logspb.ResourceLogs {
 	r.arena = r.arena[:0]
+
 	r.entry.TimeUnixNano = uint64(ev.Time().UnixNano())
 	r.entry.ObservedTimeUnixNano = uint64(observed.UnixNano())
 	r.entry.SeverityNumber = severityOf(ev.Type)
