@@ -103,8 +103,11 @@ func TestComposeKeepsUnparsedFrame(t *testing.T) {
 // TestComposeKeepsTrailingBytes asserts that an incomplete frame at the
 // end of a batch is sent unchanged, after the compacted frames.
 func TestComposeKeepsTrailingBytes(t *testing.T) {
+	frame := appendFrames(testEvent())
+	if len(frame) == 0 {
+		t.Fatal("the encoder dropped the event")
+	}
 	var (
-		frame = appendFrames(testEvent())
 		trail = frame[:len(frame)-1]
 		got   = newFramer().Compose(nil, slices.Concat(frame, trail), 2)
 	)
