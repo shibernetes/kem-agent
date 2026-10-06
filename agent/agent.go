@@ -60,7 +60,7 @@ type Options struct {
 	Factories  sink.Factories
 	Logger     *slog.Logger
 	ConfigPath string
-	Kube       *kube.Config
+	KubeConfig *kube.Config
 }
 
 // New builds every component the configuration declares.
@@ -68,12 +68,12 @@ func New(cfg *config.Config, opts Options) (*Agent, error) {
 	if opts.Logger == nil {
 		return nil, errors.New("agent: a logger is required")
 	}
-	if opts.Kube == nil {
+	if opts.KubeConfig == nil {
 		return nil, errors.New("agent: a Kubernetes client configuration is required")
 	}
 	registry := newRegistry()
 
-	client, err := opts.Kube.ClientSet()
+	client, err := opts.KubeConfig.ClientSet()
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func New(cfg *config.Config, opts Options) (*Agent, error) {
 		logger:     opts.Logger,
 		registry:   registry,
 		metrics:    metrics,
-		kube:       opts.Kube,
+		kube:       opts.KubeConfig,
 		client:     client,
 		factories:  opts.Factories,
 		configPath: opts.ConfigPath,

@@ -89,9 +89,9 @@ func analyze(path string, data []byte, factories sink.Factories) result {
 	// Building the agent proves the configuration can run, since it
 	// compiles filters and decodes the sink's settings.
 	a, err := agent.New(parsed.Config, agent.Options{
-		Factories: factories,
-		Logger:    slog.New(slog.DiscardHandler),
-		Kube:      kube.OfflineConfig(),
+		Factories:  factories,
+		Logger:     slog.New(slog.DiscardHandler),
+		KubeConfig: kube.OfflineConfig(),
 	})
 	if err != nil {
 		res.Diagnostics = append(res.Diagnostics, buildDiagnostics(parsed, err)...)

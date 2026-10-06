@@ -1,0 +1,17 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  collector:
+    type: otel
+    endpoint: collector:4317
+    tls:
+      ca_file: /nonexistent/ca.crt
+pipelines:
+  all:
+    sinks:
+      - collector
+checkpoint:
+  store:
+    type: configmap
+    name: cp

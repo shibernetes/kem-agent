@@ -35,9 +35,9 @@ func TestConfigFailurePositionsFilter(t *testing.T) {
 	res := parseFixture(t, "bad-filter")
 
 	built, err := New(res.Config, Options{
-		Factories: testFactories(),
-		Logger:    slog.New(slog.DiscardHandler),
-		Kube:      kube.OfflineConfig(),
+		Factories:  testFactories(),
+		Logger:     slog.New(slog.DiscardHandler),
+		KubeConfig: kube.OfflineConfig(),
 	})
 	if err == nil {
 		t.Fatalf("agent was build, expected an error: %v", built)
@@ -130,9 +130,9 @@ func buildFailureAttrs(t *testing.T, fixture string) map[string]string {
 
 	res := parseFixture(t, fixture)
 	built, err := New(res.Config, Options{
-		Factories: testFactories(),
-		Logger:    slog.New(slog.DiscardHandler),
-		Kube:      kube.OfflineConfig(),
+		Factories:  testFactories(),
+		Logger:     slog.New(slog.DiscardHandler),
+		KubeConfig: kube.OfflineConfig(),
 	})
 	if err == nil {
 		t.Fatalf("agent was built from fixture %s, want it rejected: %v", fixture, built)

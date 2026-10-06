@@ -9,6 +9,7 @@ import (
 	"github.com/shibernetes/kem-agent/config"
 	"github.com/shibernetes/kem-agent/sink"
 	"github.com/shibernetes/kem-agent/sink/metrics"
+	"github.com/shibernetes/kem-agent/sink/otel"
 	"github.com/shibernetes/kem-agent/sink/stdout"
 )
 
@@ -17,6 +18,7 @@ func testFactories() sink.Factories {
 	return sink.Factories{
 		stdout.TypeName:  stdout.NewFactory(),
 		metrics.TypeName: metrics.NewFactory(),
+		otel.TypeName:    otel.NewFactory(),
 	}
 }
 

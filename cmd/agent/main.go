@@ -67,7 +67,7 @@ func run(ctx context.Context, configPath, kubeconfig string) error {
 		Factories:  factories,
 		Logger:     logger,
 		ConfigPath: configPath,
-		Kube:       kubeConfig,
+		KubeConfig: kubeConfig,
 	})
 	if err != nil {
 		attrs := agent.ConfigFailureAttrs(res, configPath, err)

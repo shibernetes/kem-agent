@@ -177,9 +177,8 @@ func (a *Agent) readCheckpoint(ctx context.Context) (checkpoint.State, error) {
 // startSinks registers each sink's metrics, opens its destination and
 // starts its drainer.
 //
-// A destination that fails to open is logged and the agent carries on,
-// because one broken sink must not take the others down. A metric that
-// fails to register stops the agent, since nothing at runtime can fix it.
+// A destination that fails to open, or a metric that fails to register,
+// stops the agent. Both are unrecoverable configuration errors.
 func (a *Agent) startSinks(ctx context.Context) error {
 	for _, entry := range a.sinks {
 		if instrumented, ok := entry.sink.(sink.Instrumented); ok {
@@ -191,10 +190,7 @@ func (a *Agent) startSinks(ctx context.Context) error {
 		}
 		if entry.opener != nil {
 			if err := entry.opener.Open(ctx); err != nil {
-				a.log.LogAttrs(ctx, slog.LevelError, "failed to open the sink destination",
-					slog.String("sink", entry.name),
-					slog.Any("error", err),
-				)
+				return fmt.Errorf("sinks[%s]: failed to open the destination: %w", entry.name, err)
 			}
 		}
 		if entry.drainer != nil {
