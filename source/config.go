@@ -107,8 +107,8 @@ func (c WatchConfig) Validate() error {
 	return c.validateFieldSelector()
 }
 
-// validateFieldSelector parses the field selector and checks the fields
-// it names against the ones the APIServer accepts.
+// validateFieldSelector checks that the field selector parses, and that
+// the fields it names are ones the APIServer accepts.
 func (c WatchConfig) validateFieldSelector() error {
 	selector, err := fields.ParseSelector(c.FieldSelector)
 	if err != nil {

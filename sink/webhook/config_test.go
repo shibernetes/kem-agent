@@ -90,11 +90,11 @@ func TestConfigRejects(t *testing.T) {
 		"secret without identifier": func(c *Config) { c.Signature.Secret = testV1Signature().Secret },
 		"signing with compression":  func(c *Config) { c.Signature, c.Compression = testV1Signature(), compress.Gzip },
 		"reserved header":           func(c *Config) { c.Headers = map[string]opaque.String{headerCluster: "us-east"} },
-		"batch with no limit":       func(c *Config) { c.Batch.MaxEvents, c.Batch.MaxBytes = 0, 0 },
+		"invalid batch block":       func(c *Config) { c.Batch.MaxEvents, c.Batch.MaxBytes = 0, 0 },
 		"unknown tls version":       func(c *Config) { c.TLS = &tlsconfig.Config{MinVersion: "6.9"} },
 		"tls ca in both forms":      func(c *Config) { c.TLS = &tlsconfig.Config{CAFile: "/ca.crt", CAPEM: "-----BEGIN CERTIFICATE-----"} },
-		"queue below one chunk":     func(c *Config) { c.Queue.MaxBytes = sink.QueueChunkSize - 1 },
-		"retry with no timeout":     func(c *Config) { c.Retry.Timeout = 0 },
+		"invalid queue block":       func(c *Config) { c.Queue.MaxBytes = sink.QueueChunkSize - 1 },
+		"invalid retry block":       func(c *Config) { c.Retry.Timeout = 0 },
 	}
 	for name, opt := range cases {
 		t.Run(name, func(t *testing.T) {

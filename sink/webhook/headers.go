@@ -96,7 +96,7 @@ func basicAuth(username, password string) string {
 	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
-// validateHeaders validates the configured headers.
+// validateHeaders checks the configured headers.
 func (c Config) validateHeaders() error {
 	var (
 		reserved = c.reservedHeaders()

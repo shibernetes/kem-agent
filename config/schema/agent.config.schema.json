@@ -810,6 +810,327 @@
                         "properties": {
                             "type": {
                                 "type": "string",
+                                "const": "kafka",
+                                "description": "Sink type"
+                            },
+                            "brokers": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array",
+                                "description": "List of broker addresses the client first connects to, as host:port"
+                            },
+                            "topic": {
+                                "type": "string",
+                                "description": "Topic name the records are produced to"
+                            },
+                            "message_key": {
+                                "type": "string",
+                                "enum": [
+                                    "uid",
+                                    "namespace",
+                                    "none"
+                                ],
+                                "description": "Event field written as the key of each record. Records that share a key keep their order",
+                                "default": "uid"
+                            },
+                            "required_acks": {
+                                "oneOf": [
+                                    {
+                                        "type": "string",
+                                        "enum": [
+                                            "all",
+                                            "leader",
+                                            "none",
+                                            "1",
+                                            "0"
+                                        ]
+                                    },
+                                    {
+                                        "type": "integer",
+                                        "enum": [
+                                            1,
+                                            0
+                                        ]
+                                    }
+                                ],
+                                "description": "Replicas that must store a record before it counts as delivered. The numbers 1 and 0 are also accepted, for leader and none",
+                                "default": "all"
+                            },
+                            "compression": {
+                                "type": "string",
+                                "enum": [
+                                    "none",
+                                    "gzip",
+                                    "snappy",
+                                    "lz4",
+                                    "zstd"
+                                ],
+                                "description": "Compression algorithm name",
+                                "default": "snappy"
+                            },
+                            "client_id": {
+                                "type": "string",
+                                "description": "Client ID sent to the brokers",
+                                "default": "kem-agent"
+                            },
+                            "max_message_bytes": {
+                                "oneOf": [
+                                    {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    },
+                                    {
+                                        "type": "string",
+                                        "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                    }
+                                ],
+                                "description": "Maximum size of a record. A larger record is refused without being sent",
+                                "default": "1000012",
+                                "examples": [
+                                    4096,
+                                    "32Mi",
+                                    "1Gi"
+                                ]
+                            },
+                            "allow_auto_topic_creation": {
+                                "type": "boolean",
+                                "description": "Allow the brokers to create the topic if it doesn't exist",
+                                "default": false
+                            },
+                            "send_timeout": {
+                                "type": "string",
+                                "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                "description": "Maximum time of a single delivery attempt",
+                                "default": "5s",
+                                "examples": [
+                                    "250ms",
+                                    "30s",
+                                    "1m30s"
+                                ]
+                            },
+                            "auth": {
+                                "properties": {
+                                    "sasl": {
+                                        "properties": {
+                                            "mechanism": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "PLAIN",
+                                                    "SCRAM-SHA-256",
+                                                    "SCRAM-SHA-512"
+                                                ],
+                                                "description": "SASL mechanism the client authenticates with"
+                                            },
+                                            "username": {
+                                                "type": "string",
+                                                "description": "Name of the user"
+                                            },
+                                            "password": {
+                                                "type": "string",
+                                                "description": "Password of the user"
+                                            }
+                                        },
+                                        "additionalProperties": false,
+                                        "type": "object",
+                                        "required": [
+                                            "mechanism",
+                                            "username",
+                                            "password"
+                                        ],
+                                        "description": "Configuration of the SASL authentication"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object",
+                                "description": "Configuration of the authentication"
+                            },
+                            "tls": {
+                                "properties": {
+                                    "insecure": {
+                                        "type": "boolean",
+                                        "description": "Connect without TLS",
+                                        "default": false
+                                    },
+                                    "insecure_skip_verify": {
+                                        "type": "boolean",
+                                        "description": "Skip the server's certificate verification",
+                                        "default": false
+                                    },
+                                    "min_version": {
+                                        "type": "string",
+                                        "description": "Minimum TLS version accepted, from 1.0 to 1.3. Defaults to 1.2"
+                                    },
+                                    "ca_file": {
+                                        "type": "string",
+                                        "description": "Path of the CA certificates file, in PEM format. Mutually exclusive with ca_pem"
+                                    },
+                                    "ca_pem": {
+                                        "type": "string",
+                                        "description": "CA certificates data, in PEM format. Mutually exclusive with ca_file"
+                                    },
+                                    "include_system_ca_certs_pool": {
+                                        "type": "boolean",
+                                        "description": "Trust the system CAs as well as the configured ones, which otherwise replace them",
+                                        "default": false
+                                    },
+                                    "cert_file": {
+                                        "type": "string",
+                                        "description": "Path of the client certificate, in PEM format. Mutually exclusive with cert_pem"
+                                    },
+                                    "cert_pem": {
+                                        "type": "string",
+                                        "description": "Client certificate data, in PEM format. Mutually exclusive with cert_file"
+                                    },
+                                    "key_file": {
+                                        "type": "string",
+                                        "description": "Path of the private key file, in PEM format. Mutually exclusive with key_pem"
+                                    },
+                                    "key_pem": {
+                                        "type": "string",
+                                        "description": "Private key data, in PEM format. Mutually exclusive with key_file"
+                                    },
+                                    "server_name": {
+                                        "type": "string",
+                                        "description": "Server name sent in the TLS SNI extension and verified against the server's certificate. Uses the host of the address when empty"
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object",
+                                "description": "Configuration of the TLS connection"
+                            },
+                            "batch": {
+                                "properties": {
+                                    "max_events": {
+                                        "type": "integer",
+                                        "description": "Maximum count of events in a batch. A zero value disables the limit",
+                                        "default": 512
+                                    },
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "description": "Maximum size of a batch in bytes, measured before compression. A zero value disables the limit",
+                                        "default": "4Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time that a batch waits to fill before being sent",
+                                        "default": "5s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object",
+                                "description": "Configuration of the batching strategy"
+                            },
+                            "queue": {
+                                "properties": {
+                                    "max_bytes": {
+                                        "oneOf": [
+                                            {
+                                                "type": "integer",
+                                                "minimum": 0
+                                            },
+                                            {
+                                                "type": "string",
+                                                "pattern": "^[+-]?[0-9]+(\\.[0-9]+)?(Ki|Mi|Gi|Ti|Pi|Ei|k|M|G|T|P|E)?$"
+                                            }
+                                        ],
+                                        "description": "Maximum size of the queue in bytes. When the queue is full, it drops the oldest events",
+                                        "default": "32Mi",
+                                        "examples": [
+                                            4096,
+                                            "32Mi",
+                                            "1Gi"
+                                        ]
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object",
+                                "description": "Configuration of the events queue"
+                            },
+                            "retry": {
+                                "properties": {
+                                    "enabled": {
+                                        "type": "boolean",
+                                        "description": "Enable retry of failed event deliveries",
+                                        "default": true
+                                    },
+                                    "timeout": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time spent retrying a batch before it's dropped",
+                                        "default": "30s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "initial_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Time to wait before the first retry",
+                                        "default": "500ms",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "max_interval": {
+                                        "type": "string",
+                                        "pattern": "^[-+]?(0|(([0-9]+(\\.[0-9]*)?|\\.[0-9]+)(ns|us|µs|μs|ms|s|m|h))+)$",
+                                        "description": "Maximum time to wait between two retries",
+                                        "default": "10s",
+                                        "examples": [
+                                            "250ms",
+                                            "30s",
+                                            "1m30s"
+                                        ]
+                                    },
+                                    "multiplier": {
+                                        "type": "number",
+                                        "description": "Factor by which the wait grows after each retry",
+                                        "default": 1.5
+                                    }
+                                },
+                                "additionalProperties": false,
+                                "type": "object",
+                                "description": "Configuration of the retry strategy"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                            "type",
+                            "brokers",
+                            "topic"
+                        ],
+                        "description": "Config defines the configuration of the Kafka sink."
+                    },
+                    {
+                        "properties": {
+                            "type": {
+                                "type": "string",
                                 "const": "metrics",
                                 "description": "Sink type"
                             },

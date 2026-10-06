@@ -274,10 +274,10 @@ func (c Config) validateFormatSettings() error {
 	return nil
 }
 
-// validateCredentials refuses a credential the sink would otherwise
-// send in the clear. What counts as one is decided by its type rather
-// than by its name, so it covers every opaque value the configuration
-// holds, header values included.
+// validateCredentials checks that the sink never sends a credential in
+// the clear. What counts as one is decided by its type rather than by
+// its name, so it covers every opaque value the configuration contains,
+// header values included.
 func (c Config) validateCredentials(scheme string) error {
 	if scheme == schemeHTTPS {
 		return nil

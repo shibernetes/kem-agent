@@ -34,13 +34,13 @@ func TestConfigAccepts(t *testing.T) {
 
 func TestConfigRejects(t *testing.T) {
 	cases := map[string]func(*Config){
-		"no path":               func(c *Config) { c.Path = "" },
-		"relative path":         func(c *Config) { c.Path = "events.jsonl" },
-		"no mode":               func(c *Config) { c.Mode = 0 },
-		"mode with a type bit":  func(c *Config) { c.Mode = 0o1644 },
-		"batch with no limit":   func(c *Config) { c.Batch.MaxEvents, c.Batch.MaxBytes = 0, 0 },
-		"queue below one chunk": func(c *Config) { c.Queue.MaxBytes = sink.QueueChunkSize - 1 },
-		"retry with no timeout": func(c *Config) { c.Retry.Timeout = 0 },
+		"no path":              func(c *Config) { c.Path = "" },
+		"relative path":        func(c *Config) { c.Path = "events.jsonl" },
+		"no mode":              func(c *Config) { c.Mode = 0 },
+		"mode with a type bit": func(c *Config) { c.Mode = 0o1644 },
+		"invalid batch block":  func(c *Config) { c.Batch.MaxEvents, c.Batch.MaxBytes = 0, 0 },
+		"invalid queue block":  func(c *Config) { c.Queue.MaxBytes = sink.QueueChunkSize - 1 },
+		"invalid retry block":  func(c *Config) { c.Retry.Timeout = 0 },
 	}
 	for name, fn := range cases {
 		t.Run(name, func(t *testing.T) {

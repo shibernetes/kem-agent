@@ -2,19 +2,15 @@ package netconn
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/tls"
-	"crypto/x509"
-	"crypto/x509/pkix"
 	"errors"
-	"math/big"
 	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/shibernetes/kem-agent/internal/testutil"
 )
 
 func TestValidateAddress(t *testing.T) {
@@ -136,7 +132,7 @@ func TestSendClearsPreviousDeadline(t *testing.T) {
 // to establish a connection.
 func TestConnWithTLS(t *testing.T) {
 	var (
-		s = &tls.Config{Certificates: []tls.Certificate{selfSigned(t)}}
+		s = &tls.Config{Certificates: []tls.Certificate{testutil.SelfSigned(t)}}
 		r = make(chan string, 1)
 		c = New(Config{
 			Address: listenTLS(t, s, readInto(r, nil)),
@@ -399,25 +395,4 @@ func closedAddr(t *testing.T) string {
 		t.Fatalf("failed to close listener: %v", err)
 	}
 	return addr
-}
-
-// selfSigned returns a certificate for a test listener to serve.
-func selfSigned(t *testing.T) tls.Certificate {
-	t.Helper()
-
-	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		t.Fatalf("failed to generate key: %v", err)
-	}
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject:      pkix.Name{CommonName: "graylog"},
-		NotBefore:    time.Now().Add(-time.Hour),
-		NotAfter:     time.Now().Add(time.Hour),
-	}
-	der, err := x509.CreateCertificate(rand.Reader, &template, &template, &key.PublicKey, key)
-	if err != nil {
-		t.Fatalf("failed to create certificate: %v", err)
-	}
-	return tls.Certificate{Certificate: [][]byte{der}, PrivateKey: key}
 }

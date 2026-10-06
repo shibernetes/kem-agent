@@ -37,7 +37,7 @@
 
 ## Features
 
-- **Sinks.** Send events to an OpenTelemetry collector over OTLP, to an HTTP webhook, or to Graylog. Write them to stdout or a file, or count them as Prometheus metrics.
+- **Multiple sinks.** Send events to an OpenTelemetry collector over OTLP, to an HTTP webhook, to Graylog, or to a Kafka topic. Write them to stdout or a file, or count them as Prometheus metrics.
 - **CEL filters.** Keep only the events you care about, with [Common Expression Language](https://cel.dev/) expressions like the ones [Kubernetes admission policies](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/) use.
 - **Pipelines.** Route different events to different backends from one agent, with pipelines that each have their own namespaces, filters, and sinks.
 - **Enrichment.** Attach the labels, annotations, and owner of the object an event refers to, so that you can filter events by team, app, or owning workload.
@@ -67,6 +67,7 @@ flowchart TD
     direction TB
     otel[OTel Collector]
     graylog[Graylog]
+    kafka[Kafka]
     hook[HTTP endpoint]
     stdout[stdout]
     file[File]
@@ -86,7 +87,7 @@ flowchart TD
   classDef blue fill:#3b82f61f,stroke:#3b82f6,stroke-width:2px
   classDef purple fill:#8b5cf61f,stroke:#8b5cf6,stroke-width:2px
   classDef orange fill:#f973161f,stroke:#f97316,stroke-width:2px
-  class metricsSink,otel,graylog,hook,stdout,file blue
+  class metricsSink,otel,graylog,kafka,hook,stdout,file blue
   class k8s purple
   class prom orange
   style agent fill:transparent,stroke-width:0.75px
@@ -221,6 +222,7 @@ The `type` key of a sink selects where its events go.
 | `otel` | An OpenTelemetry collector, over [OTLP](https://opentelemetry.io/docs/specs/otlp/)/gRPC |
 | `webhook` | An HTTP endpoint, as a JSON list, NDJSON, [CloudEvents](https://cloudevents.io/), or a custom body template |
 | `graylog` | A Graylog [GELF](https://go2docs.graylog.org/current/getting_in_log_data/gelf.html) TCP input |
+| `kafka` | A Kafka topic, one record per event, the event as JSON in the record value |
 | `stdout` | The agent's standard output, one JSON event per line |
 | `file` | A file, one JSON event per line |
 | `metrics` | Prometheus counters, served on the agent's `/metrics` endpoint |

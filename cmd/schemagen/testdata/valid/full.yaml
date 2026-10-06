@@ -88,6 +88,35 @@ sinks:
     type: file
     path: /var/log/events.jsonl
     mode: 0640
+  stream:
+    type: kafka
+    brokers:
+      - kafka-0.kafka:9093
+      - kafka-1.kafka:9093
+    topic: kube-events
+    message_key: namespace
+    required_acks: 1
+    compression: zstd
+    client_id: kem-agent-prod
+    max_message_bytes: 1Mi
+    allow_auto_topic_creation: false
+    send_timeout: 10s
+    auth:
+      sasl:
+        mechanism: SCRAM-SHA-512
+        username: kem-agent
+        password: s3cr3t
+    tls:
+      ca_file: /etc/kafka/ca.crt
+    batch:
+      max_events: 512
+      max_bytes: 4Mi
+      timeout: 5s
+    queue:
+      max_bytes: 32Mi
+    retry:
+      enabled: true
+      timeout: 30s
   warn-count:
     type: metrics
     default_metrics_namespace: kem_events
@@ -107,6 +136,7 @@ pipelines:
       - archive
       - collector
       - audit
+      - stream
   tenant-pod-warnings:
     watches:
       - team-a

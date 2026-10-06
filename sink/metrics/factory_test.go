@@ -51,9 +51,9 @@ func TestCreateConsumesEventsDirectly(t *testing.T) {
 }
 
 // TestCreateRejectsForeignConfig asserts that a miswired registry
-// is a startup error rather than a panic.
+// is reported as a startup error rather than a panic.
 func TestCreateRejectsForeignConfig(t *testing.T) {
-	if _, err := NewFactory().Create(sink.Options{Name: "warn-count"}, struct{}{}); err == nil {
+	if _, err := NewFactory().Create(sink.Options{Name: "prom"}, struct{}{}); err == nil {
 		t.Error("another type's config was accepted, want it rejected")
 	}
 }

@@ -154,7 +154,7 @@ func (c *Conn) write(ctx context.Context, b []byte) (bool, error) {
 	return reused, nil
 }
 
-// ValidateAddress checks that host is a bare hostname or IP address,
+// ValidateAddress validates that host is a bare hostname or IP address,
 // and port a usable TCP port number.
 func ValidateAddress(host string, port int) error {
 	if host == "" {

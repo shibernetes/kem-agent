@@ -106,7 +106,7 @@ func (c *Config) validatePipelines() error {
 	return nil
 }
 
-// validateComponent validates a component's own configuration.
+// validateComponent checks a component's own configuration.
 // Any validation error reports the origin of the issue with the
 // position of the line in the configuration file.
 func (c *Config) validateComponent(component *Component, key ast.Node, path string) error {

@@ -18,9 +18,9 @@ func TestDefaultConfigValidates(t *testing.T) {
 // blocks it carries, rather than leaving them to the agent.
 func TestConfigRejects(t *testing.T) {
 	cases := map[string]func(*Config){
-		"batch with no limit":   func(c *Config) { c.Batch.MaxEvents, c.Batch.MaxBytes = 0, 0 },
-		"queue below one chunk": func(c *Config) { c.Queue.MaxBytes = sink.QueueChunkSize - 1 },
-		"retry with no timeout": func(c *Config) { c.Retry.Timeout = 0 },
+		"invalid batch block": func(c *Config) { c.Batch.MaxEvents, c.Batch.MaxBytes = 0, 0 },
+		"invalid queue block": func(c *Config) { c.Queue.MaxBytes = sink.QueueChunkSize - 1 },
+		"invalid retry block": func(c *Config) { c.Retry.Timeout = 0 },
 	}
 	for name, fn := range cases {
 		t.Run(name, func(t *testing.T) {
