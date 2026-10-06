@@ -3,10 +3,12 @@ name: Renovate
 
 on:
   schedule:
-    # Runs daily. On Mondays, this run falls inside the schedule in
-    # renovate.json and opens the routine updates.
+    # Runs daily. On Mondays, both runs fall inside the schedule in
+    # renovate.json and open the routine updates. That schedule allows
+    # the whole day, because GitHub can start scheduled runs several
+    # hours late.
     - cron: "16 6 * * *"
-    # A second run twelve hours later, for security fixes, which ignore
+    # A second run twelve hours later, also for security fixes, which ignore
     # that schedule.
     - cron: "16 18 * * *"
   workflow_dispatch: {}
