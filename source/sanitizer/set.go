@@ -17,6 +17,11 @@ type Set struct {
 // called for every event.
 func New(cfg Config) *Set {
 	s := &Set{}
+
+	// Allowed values must be checked before an eventual truncation.
+	if c := cfg.FieldValues; c.Enabled && len(c.Fields) > 0 {
+		s.events = append(s.events, newFieldValues(c.Fields))
+	}
 	if cfg.FieldLimits.Enabled {
 		s.events = append(s.events, fieldLimits{})
 	}

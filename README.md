@@ -41,7 +41,7 @@
 - **CEL filters.** Keep only the events you care about, with [Common Expression Language](https://cel.dev/) expressions like the ones [Kubernetes admission policies](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/) use.
 - **Pipelines.** Route different events to different backends from one agent, with pipelines that each have their own namespaces, filters, and sinks.
 - **Enrichment.** Attach the labels, annotations, and owner of the object an event refers to, so that you can filter events by team, app, or owning workload.
-- **Sanitizers.** Keep oversized events out of your backends by shortening long fields, capping labels and annotations, trimming long annotation values, and dropping kubectl's `last-applied-configuration` annotation.
+- **Sanitizers.** Keep oversized or unexpected events out of your backends by shortening long fields, capping labels and annotations, trimming long annotation values, dropping kubectl's `last-applied-configuration` annotation, and clearing disallowed field values.
 - **Checkpoints.** Resume where the agent left off after a restart or an upgrade, with its progress saved in a ConfigMap or a file.
 - **Hot reload.** Update filters without restarting the agent.
 

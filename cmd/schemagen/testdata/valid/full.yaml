@@ -29,6 +29,12 @@ source:
       max_bytes: 2Ki
     last_applied_config:
       enabled: true
+    field_values:
+      enabled: true
+      fields:
+        type:
+          - Normal
+          - Warning
 sinks:
   collector:
     type: otel

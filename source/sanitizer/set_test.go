@@ -27,6 +27,13 @@ func TestNewBuildsSanitizers(t *testing.T) {
 				"annotationValueLimit",
 			},
 		},
+		"field values before field limits": {
+			cfg: Config{
+				FieldLimits: FieldLimits{Enabled: true},
+				FieldValues: FieldValues{Enabled: true, Fields: FieldAllowlists{event.FieldType: {"Normal"}}},
+			},
+			wantEvents: []string{"fieldValues", "fieldLimits"},
+		},
 		"one sanitizer enabled": {
 			cfg:          Config{LastAppliedConfig: LastAppliedConfig{Enabled: true}},
 			wantMetadata: []string{"lastAppliedConfig"},

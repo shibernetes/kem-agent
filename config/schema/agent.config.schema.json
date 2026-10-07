@@ -379,11 +379,36 @@
                 "annotation_value_limit": {
                     "$ref": "#/$defs/source.sanitizer.AnnotationValueLimit",
                     "description": "Configuration of the sanitizer that shortens long annotation values"
+                },
+                "field_values": {
+                    "$ref": "#/$defs/source.sanitizer.FieldValues",
+                    "description": "Configuration of the sanitizer that clears an event field whose value is not explicitly allowed"
                 }
             },
             "additionalProperties": false,
             "type": "object",
             "description": "Config defines the configuration for the sanitizers applied to every event."
+        },
+        "source.sanitizer.FieldAllowlists": {
+            "additionalProperties": {
+                "items": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "type": "array",
+                "uniqueItems": true
+            },
+            "propertyNames": {
+                "type": "string",
+                "enum": [
+                    "type",
+                    "reason",
+                    "action",
+                    "reportingController",
+                    "reportingInstance"
+                ]
+            },
+            "type": "object"
         },
         "source.sanitizer.FieldLimits": {
             "properties": {
@@ -395,7 +420,23 @@
             },
             "additionalProperties": false,
             "type": "object",
-            "description": "FieldLimits shortens the event string fields using events.k8s.io/v1 bounds, and the fields of the object references an event carries, which no API bounds at all."
+            "description": "FieldLimits shortens an event's string fields to the lengths that events.k8s.io/v1 allows. It also shortens the fields of the object references an event carries, which no API limits."
+        },
+        "source.sanitizer.FieldValues": {
+            "properties": {
+                "enabled": {
+                    "type": "boolean",
+                    "description": "Enable the sanitizer",
+                    "default": false
+                },
+                "fields": {
+                    "$ref": "#/$defs/source.sanitizer.FieldAllowlists",
+                    "description": "Allowed values of each constrained field, keyed by field name. A field with an empty list is cleared on every event"
+                }
+            },
+            "additionalProperties": false,
+            "type": "object",
+            "description": "FieldValues clears an event field whose value isn't in the allowlist. By default, it constrains no field and is disabled."
         },
         "source.sanitizer.LastAppliedConfig": {
             "properties": {
