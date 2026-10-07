@@ -70,6 +70,7 @@ func TestConfigRejects(t *testing.T) {
 		"negative value limit":                 {AnnotationValueLimit: AnnotationValueLimit{MaxBytes: -1}},
 		"field values enabled without a field": {FieldValues: FieldValues{Enabled: true}},
 		"unknown field":                        {FieldValues: FieldValues{Fields: FieldAllowlists{event.FieldNote: {"x"}}}},
+		"field without value":                  {FieldValues: FieldValues{Fields: FieldAllowlists{event.FieldType: nil}}},
 		"empty value":                          {FieldValues: FieldValues{Fields: FieldAllowlists{event.FieldType: {""}}}},
 		"blank value":                          {FieldValues: FieldValues{Fields: FieldAllowlists{event.FieldType: {"  "}}}},
 		"value with surrounding whitespace":    {FieldValues: FieldValues{Fields: FieldAllowlists{event.FieldType: {" Warning"}}}},

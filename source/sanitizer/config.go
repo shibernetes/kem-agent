@@ -170,6 +170,9 @@ func (f FieldAllowlists) Validate() error {
 		if !slices.Contains(restrictedFields, name) {
 			return diag.Pathf(name, "unknown field %q, allowed fields are %s", name, enum.Join(restrictedFields))
 		}
+		if f[name] == nil {
+			return diag.Pathf(name, "%s: list the allowed values, or write [] to allow none", name)
+		}
 		for i, v := range f[name] {
 			path := fmt.Sprintf("%s[%d]", name, i)
 
