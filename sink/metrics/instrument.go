@@ -44,8 +44,16 @@ func newInstrument(c Config, m Metric) *instrument {
 }
 
 // inc increments the counter for one combination of label values.
-func (i *instrument) inc(values []string) {
-	i.vec.WithLabelValues(values...).Inc()
+// It reports false when the counter refuses them, like for a value
+// that is not valid UTF-8.
+func (i *instrument) inc(values []string) bool {
+	counter, err := i.vec.GetMetricWithLabelValues(values...)
+	if err != nil {
+		return false
+	}
+	counter.Inc()
+
+	return true
 }
 
 // resolve appends the event's label values to dst, in the order the counter

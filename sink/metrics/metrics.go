@@ -90,8 +90,11 @@ func (s *Sink) Handle(ev *event.Event) error {
 			s.warnRefused(i, in)
 			continue
 		}
-		in.inc(sc.values)
-		recorded = true
+		// The source replaces invalid UTF-8, so the counter only refuses
+		// a value from a field that the source does not check.
+		if in.inc(sc.values) {
+			recorded = true
+		}
 	}
 	if !recorded {
 		return sink.ErrRejected

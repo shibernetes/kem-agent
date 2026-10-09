@@ -24,6 +24,17 @@ type MetadataSanitizer interface {
 	Sanitize(*event.ObjectMeta)
 }
 
+// ValidUTF8 returns s with each run of invalid UTF-8 bytes
+// replaced by U+FFFD, or s itself when it contains none.
+func ValidUTF8(s string) string {
+	// strings.ToValidUTF8 decodes a string rune by rune even
+	// when it is valid, so the check comes first.
+	if utf8.ValidString(s) {
+		return s
+	}
+	return strings.ToValidUTF8(s, string(utf8.RuneError))
+}
+
 // truncateValues shortens every value of m over limit bytes.
 // A limit of zero leaves the map untouched.
 func truncateValues(m map[string]string, limit int) {

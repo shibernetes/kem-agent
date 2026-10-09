@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/shibernetes/kem-agent/event"
 	"github.com/shibernetes/kem-agent/source/sanitizer"
@@ -49,6 +50,11 @@ func (t *transformer) project(obj *metav1.PartialObjectMetadata) *entry {
 		Annotations: t.annotations.apply(obj.Annotations),
 		Terminating: obj.DeletionTimestamp != nil,
 	}
+	// The APIServer validates labels but not annotation values,
+	// so a protobuf client could write invalid UTF-8 in those.
+	for key, value := range object.Annotations {
+		object.Annotations[key] = sanitizer.ValidUTF8(value)
+	}
 	// Running after the allowlist bounds one that keeps every key.
 	for _, s := range t.sanitizers {
 		s.Sanitize(&object.ObjectMeta)
@@ -71,11 +77,13 @@ func (t *transformer) project(obj *metav1.PartialObjectMetadata) *entry {
 // object's namespace or cluster-scoped, so the namespace is set for a
 // namespaced owner alone.
 func (t *transformer) ownerRef(owner *metav1.OwnerReference, namespace string) *corev1.ObjectReference {
+	// The APIServer only requires these fields to be set,
+	// so each can hold invalid UTF-8.
 	ref := &corev1.ObjectReference{
-		Kind:       owner.Kind,
-		Name:       owner.Name,
-		UID:        owner.UID,
-		APIVersion: owner.APIVersion,
+		Kind:       sanitizer.ValidUTF8(owner.Kind),
+		Name:       sanitizer.ValidUTF8(owner.Name),
+		UID:        types.UID(sanitizer.ValidUTF8(string(owner.UID))),
+		APIVersion: sanitizer.ValidUTF8(owner.APIVersion),
 	}
 	if t.isNamespaced(owner.APIVersion, owner.Kind) {
 		ref.Namespace = namespace

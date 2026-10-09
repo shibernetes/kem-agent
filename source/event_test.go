@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	eventsv1 "k8s.io/api/events/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/shibernetes/kem-agent/event"
 )
@@ -49,6 +50,56 @@ func TestLiftFields(t *testing.T) {
 		Type: "Warning",
 	}
 	if diff := cmp.Diff(want, lift(upstream)); diff != "" {
+		t.Errorf("the lifted event differs (-want +got):\n%s", diff)
+	}
+}
+
+// TestLiftReplacesInvalidUTF8 asserts that the lift replaces invalid
+// UTF-8 in every field that the APIServer does not validate, since a
+// protobuf client can write it in any of them.
+func TestLiftReplacesInvalidUTF8(t *testing.T) {
+	const (
+		invalid = "a\xffb"
+		valid   = "a�b"
+	)
+	ref := func(s string) corev1.ObjectReference {
+		return corev1.ObjectReference{
+			Kind:            s,
+			Namespace:       s,
+			Name:            s,
+			UID:             types.UID(s),
+			APIVersion:      s,
+			ResourceVersion: s,
+			FieldPath:       s,
+		}
+	}
+	got := lift(&eventsv1.Event{
+		Name:                invalid,
+		Annotations:         map[string]string{"team": invalid},
+		EventTime:           testEventTime,
+		ReportingController: invalid,
+		ReportingInstance:   invalid,
+		Action:              invalid,
+		Reason:              invalid,
+		Regarding:           ref(invalid),
+		Related:             new(ref(invalid)),
+		Note:                invalid,
+		Type:                invalid,
+	})
+	want := &event.Event{
+		Annotations:         map[string]string{"team": valid},
+		Name:                valid,
+		EventTime:           testEventTime,
+		ReportingController: valid,
+		ReportingInstance:   valid,
+		Action:              valid,
+		Reason:              valid,
+		Regarding:           ref(valid),
+		Related:             new(ref(valid)),
+		Note:                valid,
+		Type:                valid,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("the lifted event differs (-want +got):\n%s", diff)
 	}
 }

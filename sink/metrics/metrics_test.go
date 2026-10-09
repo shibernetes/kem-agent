@@ -52,6 +52,19 @@ func TestHandleRejectsWhenNothingRecorded(t *testing.T) {
 	}
 }
 
+// TestHandleRejectsInvalidLabelValue asserts that an event
+// with a label value that the counter refuses is rejected.
+func TestHandleRejectsInvalidLabelValue(t *testing.T) {
+	s := newTestSink(t, testConfig(nil))
+
+	ev := testEvent()
+	ev.Reason = "OOM\xffKilled"
+
+	if err := s.Handle(ev); !errors.Is(err, sink.ErrRejected) {
+		t.Errorf("got %v, want the event rejected", err)
+	}
+}
+
 func TestMaxSeriesRefusesNewCombinations(t *testing.T) {
 	const limit = 3
 

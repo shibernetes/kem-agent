@@ -193,6 +193,38 @@ func TestProjectResolvesOwner(t *testing.T) {
 	}
 }
 
+// TestProjectReplacesInvalidUTF8 asserts that a projected object contains
+// valid UTF-8. The APIServer does not validate annotation values or the
+// fields of an owner reference.
+func TestProjectReplacesInvalidUTF8(t *testing.T) {
+	t.Parallel()
+
+	const (
+		invalid = "a\xffb"
+		valid   = "a�b"
+	)
+	var (
+		tr  = &transformer{annotations: Allowlist{Enabled: true}, mapper: testMapper()}
+		obj = testObject()
+	)
+	obj.Annotations = map[string]string{"note": invalid}
+	obj.OwnerReferences = []metav1.OwnerReference{
+		{APIVersion: invalid, Kind: invalid, Name: invalid, UID: invalid, Controller: new(true)},
+	}
+	object := tr.project(obj).object
+
+	if got := object.Annotations["note"]; got != valid {
+		t.Errorf("got annotation %q, want %q", got, valid)
+	}
+	if object.Owner == nil {
+		t.Fatal("got no owner, want one")
+	}
+	want := corev1.ObjectReference{Kind: valid, Name: valid, UID: valid, APIVersion: valid}
+	if *object.Owner != want {
+		t.Errorf("got owner %+v, want %+v", *object.Owner, want)
+	}
+}
+
 func TestProjectTakesOnlyTheController(t *testing.T) {
 	t.Parallel()
 

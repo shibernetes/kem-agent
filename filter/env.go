@@ -63,16 +63,11 @@ func NewEnv() (*Env, error) {
 		cel.CrossTypeNumericComparisons(true),
 		cel.OptionalTypes(),
 		cel.CostEstimatorOptions(checker.PresenceTestHasCost(false)),
-		cel.ASTValidators(
-			cel.ValidateDurationLiterals(),
-			cel.ValidateTimestampLiterals(),
-			cel.ValidateRegexLiterals(),
-			cel.ValidateHomogeneousAggregateLiterals(),
-		),
+		cel.ASTValidators(astValidators()...),
 
-		// Strings is pinned at 5 because that is where its
-		// functions start being priced by argument size rather
-		// than as plain calls.
+		// Strings is pinned at version 5, because from that version
+		// its functions are priced by argument size rather than as
+		// plain calls.
 		ext.Strings(ext.StringsVersion(5)),
 		ext.Sets(ext.SetsVersion(0)),
 		ext.TwoVarComprehensions(ext.TwoVarComprehensionsVersion(0)),
@@ -132,4 +127,13 @@ func hasComprehension(ast *cel.Ast) bool {
 		return true
 	}
 	return len(celast.MatchDescendants(nav, celast.KindMatcher(celast.ComprehensionKind))) > 0
+}
+
+func astValidators() []cel.ASTValidator {
+	return []cel.ASTValidator{
+		cel.ValidateDurationLiterals(),
+		cel.ValidateTimestampLiterals(),
+		cel.ValidateRegexLiterals(),
+		cel.ValidateHomogeneousAggregateLiterals(),
+	}
 }
