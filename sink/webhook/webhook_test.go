@@ -8,10 +8,13 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -300,6 +303,51 @@ func TestSendAfterShutdown(t *testing.T) {
 	if got := r.count(); got != 0 {
 		t.Errorf("the destination received %d requests, want none", got)
 	}
+}
+
+// TestSendDoesNotLeakURL asserts that an error returned by the sink's
+// Send method does not contain its URL, since a webhook URL can contain
+// sensitive information in its path or query.
+func TestSendDoesNotLeakURL(t *testing.T) {
+	const secret = "s3cr3t"
+
+	var lc net.ListenConfig
+
+	ln, err := lc.Listen(t.Context(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("failed to listen: %v", err)
+	}
+	// Nothing listens on the address of a closed listener,
+	// so the client fails to connect.
+	_ = ln.Close()
+
+	cfg := validConfig()
+	cfg.URL = fmt.Sprintf("http://%s/hooks/%s?token=%s", ln.Addr(), secret, secret)
+
+	s := newTestSink(t, cfg)
+
+	send := func(state string) {
+		t.Helper()
+
+		_, err := s.Send(t.Context(), []byte("[]"), sink.NewBatchID())
+		if err == nil {
+			t.Fatalf("%s: the batch was delivered, want an error", state)
+		}
+		if strings.Contains(err.Error(), secret) {
+			t.Errorf("%s: the error contains the URL: %v", state, err)
+		}
+	}
+	send("before open")
+
+	if err := s.Open(t.Context()); err != nil {
+		t.Fatalf("failed to open sink: %v", err)
+	}
+	send("destination unreachable")
+
+	if err := s.Shutdown(t.Context()); err != nil {
+		t.Fatalf("failed to shutdown: %v", err)
+	}
+	send("after shutdown")
 }
 
 // sendReusesConnection sends one payload and reports whether it

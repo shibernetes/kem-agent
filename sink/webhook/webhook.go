@@ -121,11 +121,12 @@ func (s *Sink) Open(context.Context) error {
 // so no record is ever refused.
 // It returns [sink.ErrClosed] once Shutdown has been called.
 func (s *Sink) Send(ctx context.Context, payload []byte, id sink.BatchID) (int, error) {
+	// These errors leave the URL out, since it can contain a secret.
 	switch {
 	case s.closed.Load():
-		return 0, fmt.Errorf("%w: %s", sink.ErrClosed, s.url)
+		return 0, sink.ErrClosed
 	case s.client == nil:
-		return 0, fmt.Errorf("%w: %s", sink.ErrNotOpen, s.url)
+		return 0, sink.ErrNotOpen
 	}
 	body := payload
 
@@ -185,7 +186,7 @@ func (s *Sink) compress(payload []byte) ([]byte, error) {
 	defer s.mu.Unlock()
 
 	if s.closed.Load() {
-		return nil, fmt.Errorf("%w: %s", sink.ErrClosed, s.url)
+		return nil, sink.ErrClosed
 	}
 	compressed, err := s.compressor.Compress(payload)
 	if err != nil {

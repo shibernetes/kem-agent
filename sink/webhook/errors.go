@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -13,6 +14,11 @@ import (
 
 // classify turns a transport error into a delivery error.
 func classify(ctx context.Context, err error) error {
+	// The client returns every failure as a *url.Error, whose
+	// message includes the full URL with its path and query.
+	if urlErr, ok := errors.AsType[*url.Error](err); ok {
+		err = urlErr.Err
+	}
 	switch {
 	case err == nil:
 		return nil
