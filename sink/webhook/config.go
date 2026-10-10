@@ -236,13 +236,13 @@ func (c Config) validate() error {
 func (c Config) parseURL() (*url.URL, error) {
 	u, err := url.Parse(c.URL)
 	if err != nil {
-		return nil, diag.Pathf("url", "invalid url %q: %w", c.URL, err)
+		return nil, diag.Pathf("url", "invalid url")
 	}
 	switch {
 	case u.Scheme != schemeHTTP && u.Scheme != schemeHTTPS:
 		return nil, diag.Pathf("url", "invalid url scheme %q, must be %s or %s", u.Scheme, schemeHTTP, schemeHTTPS)
 	case u.Host == "":
-		return nil, diag.Pathf("url", "url %q must include a host", c.URL)
+		return nil, diag.Pathf("url", "url must include a host")
 	case u.User != nil:
 		// Credentials set in the URL bypass the auth block.
 		return nil, diag.Pathf("url", "url must not carry credentials")

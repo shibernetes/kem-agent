@@ -3,6 +3,7 @@ package webhook
 import (
 	"net/http"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -103,6 +104,32 @@ func TestConfigRejects(t *testing.T) {
 
 			if err := cfg.Validate(); err == nil {
 				t.Error("got no error, want the configuration rejected")
+			}
+		})
+	}
+}
+
+// TestConfigDoesNotLeakURL asserts that the error for a rejected URL
+// does not echo the raw URL, since it can contain sensitive information.
+func TestConfigDoesNotLeakURL(t *testing.T) {
+	const secret = "s3cr3t"
+
+	cases := map[string]string{
+		"no host":               "https://agent:" + secret + "@",
+		"trailing newline":      "https://foo.xyz/hooks/" + secret + "\n",
+		"password with a slash": "https://agent:" + secret + "/x@foo.xyz/event",
+	}
+	for name, raw := range cases {
+		t.Run(name, func(t *testing.T) {
+			cfg := validConfig()
+			cfg.URL = raw
+
+			err := cfg.Validate()
+			if err == nil {
+				t.Fatal("got no error, want the configuration rejected")
+			}
+			if strings.Contains(err.Error(), secret) {
+				t.Errorf("the error contains the URL: %v", err)
 			}
 		})
 	}
