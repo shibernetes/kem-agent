@@ -40,12 +40,16 @@ func watchSignals(cancel context.CancelFunc, logger *slog.Logger) func() {
 	}
 }
 
-// relaySIGHUP calls notify on every SIGHUP until ctx is done.
+// relaySIGHUP calls notify on every SIGHUP until ctx is done,
+// then ignores the signal.
 func relaySIGHUP(ctx context.Context, notify func()) {
 	ch := make(chan os.Signal, 1)
 
 	signal.Notify(ch, syscall.SIGHUP)
-	defer signal.Stop(ch)
+
+	// signal.Stop would restore the signal's default behavior, so a
+	// SIGHUP received during the stop sequence would end the process.
+	defer signal.Ignore(syscall.SIGHUP)
 
 	for {
 		select {
