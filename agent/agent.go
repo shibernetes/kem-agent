@@ -28,31 +28,32 @@ import (
 // I/O and starts nothing, so a configuration can be proved to run without
 // opening a connection to a cluster or a sink destination.
 type Agent struct {
-	cfg          *config.Config
-	logger       *slog.Logger
-	registry     *prometheus.Registry
-	metrics      *instruments
-	kube         *kube.Config
-	client       kubernetes.Interface
-	factories    sink.Factories
-	configPath   string
-	lastConfig   []byte
-	sinks        []*sinkEntry
-	pipelines    []*pipeline.Pipeline
-	fanouts      map[string]*pipeline.Fanout
-	filters      atomic.Pointer[[]filter.Set]
-	filterEnv    *filter.Env
-	checkpointer *checkpoint.Checkpointer
-	log          *slog.Logger
-	servers      []*httpServer
-	enricher     source.Enricher
-	source       *source.Source
-	stopWatches  context.CancelFunc
-	sourceDone   chan struct{}
-	errs         chan error
-	reload       chan struct{}
-	reopen       chan struct{}
-	ready        atomic.Bool
+	cfg           *config.Config
+	logger        *slog.Logger
+	registry      *prometheus.Registry
+	metrics       *instruments
+	kube          *kube.Config
+	client        kubernetes.Interface
+	factories     sink.Factories
+	configPath    string
+	lastConfig    []byte
+	lastPipelines map[string]pipeline.Config
+	sinks         []*sinkEntry
+	pipelines     []*pipeline.Pipeline
+	fanouts       map[string]*pipeline.Fanout
+	filters       atomic.Pointer[[]filter.Set]
+	filterEnv     *filter.Env
+	checkpointer  *checkpoint.Checkpointer
+	log           *slog.Logger
+	servers       []*httpServer
+	enricher      source.Enricher
+	source        *source.Source
+	stopWatches   context.CancelFunc
+	sourceDone    chan struct{}
+	errs          chan error
+	reload        chan struct{}
+	reopen        chan struct{}
+	ready         atomic.Bool
 }
 
 // Options configures an agent.
@@ -60,6 +61,7 @@ type Options struct {
 	Factories  sink.Factories
 	Logger     *slog.Logger
 	ConfigPath string
+	ConfigData []byte
 	KubeConfig *kube.Config
 }
 
@@ -106,20 +108,22 @@ func New(cfg *config.Config, opts Options) (*Agent, error) {
 		return nil, err
 	}
 	a := &Agent{
-		cfg:        cfg,
-		logger:     opts.Logger,
-		registry:   registry,
-		metrics:    metrics,
-		kube:       opts.KubeConfig,
-		client:     client,
-		factories:  opts.Factories,
-		configPath: opts.ConfigPath,
-		sinks:      sinks,
-		pipelines:  pipelines,
-		filterEnv:  env,
-		log:        opts.Logger.With(slog.String("component", "agent")),
-		reload:     make(chan struct{}, 1),
-		reopen:     make(chan struct{}, 1),
+		cfg:           cfg,
+		logger:        opts.Logger,
+		registry:      registry,
+		metrics:       metrics,
+		kube:          opts.KubeConfig,
+		client:        client,
+		factories:     opts.Factories,
+		configPath:    opts.ConfigPath,
+		lastConfig:    opts.ConfigData,
+		lastPipelines: cfg.Pipelines,
+		sinks:         sinks,
+		pipelines:     pipelines,
+		filterEnv:     env,
+		log:           opts.Logger.With(slog.String("component", "agent")),
+		reload:        make(chan struct{}, 1),
+		reopen:        make(chan struct{}, 1),
 	}
 	// The filters must be set before building the fan-outs below.
 	// They keep a pointer to it and read it for every event.

@@ -5,10 +5,13 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
+	"slices"
 
 	"github.com/shibernetes/kem-agent/config"
 	"github.com/shibernetes/kem-agent/internal/configwatcher"
+	"github.com/shibernetes/kem-agent/pipeline"
 )
 
 // watchConfigFile triggers a reload whenever the config file changes.
@@ -65,7 +68,10 @@ func (a *Agent) reloadConfig(ctx context.Context) {
 		a.reloadFailed(ctx, "failed to load configuration", nil, err)
 		return
 	}
+	// The startup config tells whether a restart is owed. The filters
+	// last applied tell whether this reload changes any of them.
 	delta, blocks := config.ClassifyDelta(a.cfg, next.Config)
+	filtersChanged := !sameFilters(a.lastPipelines, next.Config.Pipelines)
 
 	if err := a.swapFilters(next.Config); err != nil {
 		a.reloadFailed(ctx, "failed to compile filters", next, err)
@@ -73,18 +79,21 @@ func (a *Agent) reloadConfig(ctx context.Context) {
 	}
 	a.logWarnings(ctx, next)
 	a.lastConfig = data
+	a.lastPipelines = next.Config.Pipelines
 
-	switch delta {
-	case config.DeltaStructural:
+	switch {
+	case delta == config.DeltaStructural:
 		a.log.LogAttrs(ctx, slog.LevelWarn,
 			"config changed outside the filters, restart the agent to apply it",
 			slog.Any("blocks", blocks),
 		)
 		a.metrics.reloads.WithLabelValues("partial").Inc()
-	case config.DeltaFilters:
+	case filtersChanged:
 		a.log.LogAttrs(ctx, slog.LevelInfo, "filters reloaded")
 		a.metrics.reloads.WithLabelValues("success").Inc()
-	case config.DeltaNone:
+	default:
+		// A reformat or a new comment changes the file but not its filters.
+		a.log.LogAttrs(ctx, slog.LevelDebug, "config updated, filters unchanged")
 		a.metrics.reloads.WithLabelValues("success").Inc()
 	}
 }
@@ -117,4 +126,11 @@ func (a *Agent) logWarnings(ctx context.Context, res *config.Result) {
 func (a *Agent) reloadFailed(ctx context.Context, msg string, parsed *config.Result, err error) {
 	a.log.LogAttrs(ctx, slog.LevelWarn, msg, ConfigFailureAttrs(parsed, a.configPath, err)...)
 	a.metrics.reloads.WithLabelValues("failure").Inc()
+}
+
+// sameFilters reports whether two sets of pipelines declare the same filters.
+func sameFilters(a, b map[string]pipeline.Config) bool {
+	return maps.EqualFunc(a, b, func(x, y pipeline.Config) bool {
+		return slices.Equal(x.Filters, y.Filters)
+	})
 }

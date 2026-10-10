@@ -44,7 +44,7 @@ func run(ctx context.Context, configPath, kubeconfig string) error {
 	logger := agent.NewLogger(config.DefaultServiceConfig().Logging)
 	agent.BridgeKlog(logger)
 
-	res, err := loadConfig(ctx, logger, configPath, factories)
+	res, data, err := loadConfig(ctx, logger, configPath, factories)
 	if err != nil {
 		return err
 	}
@@ -67,6 +67,7 @@ func run(ctx context.Context, configPath, kubeconfig string) error {
 		Factories:  factories,
 		Logger:     logger,
 		ConfigPath: configPath,
+		ConfigData: data,
 		KubeConfig: kubeConfig,
 	})
 	if err != nil {
@@ -81,15 +82,16 @@ func run(ctx context.Context, configPath, kubeconfig string) error {
 	return nil
 }
 
-// loadConfig reads and parses the configuration file.
-func loadConfig(ctx context.Context, logger *slog.Logger, path string, factories sink.Factories) (*config.Result, error) {
+// loadConfig reads and parses the configuration file, and
+// returns its content along with the parsing result.
+func loadConfig(ctx context.Context, logger *slog.Logger, path string, factories sink.Factories) (*config.Result, []byte, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		logger.LogAttrs(ctx, slog.LevelError, "failed to read config file",
 			slog.Any("error", err),
 			slog.String("file", path),
 		)
-		return nil, errQuit
+		return nil, nil, errQuit
 	}
 	res, err := config.Parse(data, factories)
 	if err != nil {
@@ -103,9 +105,9 @@ func loadConfig(ctx context.Context, logger *slog.Logger, path string, factories
 		}
 		logger.LogAttrs(ctx, slog.LevelError, "failed to parse configuration",
 			agent.ConfigFailureAttrs(nil, path, err)...)
-		return nil, errQuit
+		return nil, nil, errQuit
 	}
-	return res, nil
+	return res, data, nil
 }
 
 func setMemoryLimit(ctx context.Context, logger *slog.Logger) {
