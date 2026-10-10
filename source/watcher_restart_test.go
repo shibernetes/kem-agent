@@ -86,6 +86,29 @@ func TestWatcherExpiryReplaysAfterPosition(t *testing.T) {
 	}
 }
 
+// TestWatcherExpiryKeepsMaxAge asserts that the event age limit still
+// applies when the first replay expires and starts over.
+func TestWatcherExpiryKeepsMaxAge(t *testing.T) {
+	var (
+		r = &eventRecorder{}
+		w = newTestWatcher(t, watcherOptions{
+			config:     WatchConfig{Namespace: testNamespace},
+			dispatcher: r,
+			maxAge:     time.Hour,
+		})
+	)
+	w.expire()
+
+	if err := drain(t, w, func(s *watch.FakeWatcher) {
+		s.Add(watchedEvent("1042"))
+	}); err != nil {
+		t.Fatalf("the stream ended with an error: %v", err)
+	}
+	if len(r.names()) != 0 {
+		t.Error("an event older than the age limit was dispatched, want it dropped")
+	}
+}
+
 func TestWatcherLogsReconnect(t *testing.T) {
 	var (
 		r  = &logRecorder{}

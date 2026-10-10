@@ -308,7 +308,15 @@ func (w *namespaceWatcher) classify(ctx context.Context, err error) error {
 // counted but not logged.
 func (w *namespaceWatcher) expire() {
 	w.metrics.restartExpired.Inc()
-	w.replay.startAfter(w.position())
+
+	pos := w.position()
+	if pos == "" {
+		// A watch with no position has not finished its first replay,
+		// so it starts over and keeps the event age limit.
+		w.replay.start()
+		return
+	}
+	w.replay.startAfter(pos)
 }
 
 // position returns how far the stream was read, or an empty string
