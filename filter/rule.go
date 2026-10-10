@@ -18,12 +18,6 @@ type Rule struct {
 	interruptible bool
 }
 
-// Expr returns the expression the rule was compiled from,
-// as it was written in the configuration.
-func (r *Rule) Expr() string {
-	return r.expr
-}
-
 // eval evaluates the rule against an activation. Only an expression that
 // can be interrupted uses the given context.
 func (r *Rule) eval(ctx context.Context, act any) (ref.Val, *cel.EvalDetails, error) {

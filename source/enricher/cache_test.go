@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
-	"unsafe"
 
 	"github.com/google/go-cmp/cmp"
 	corev1 "k8s.io/api/core/v1"
@@ -294,42 +292,6 @@ func TestEnrichBoundsWhatTheWarnRemembers(t *testing.T) {
 
 	if got := len(h.logs.attr(0, "kind")); got != maxKeyBytes {
 		t.Errorf("got a kind of %d bytes, want %d", got, maxKeyBytes)
-	}
-}
-
-func TestTruncateKeepsShortValues(t *testing.T) {
-	t.Parallel()
-
-	s := strings.Repeat("a", maxKeyBytes)
-
-	if got := truncate(s); got != s {
-		t.Errorf("got %d bytes, want the value kept whole", len(got))
-	}
-}
-
-func TestTruncateCopies(t *testing.T) {
-	t.Parallel()
-
-	s := strings.Repeat("a", maxKeyBytes+1)
-
-	if got := truncate(s); unsafe.StringData(got) == unsafe.StringData(s) {
-		t.Error("the value shares the backing array, want a copy")
-	}
-}
-
-func TestTruncateCutsOnRuneBoundary(t *testing.T) {
-	t.Parallel()
-
-	s := strings.Repeat("a", maxKeyBytes-1) + "é" + strings.Repeat("b", 10)
-
-	// The limit falls inside the two bytes of the last rune,
-	// which must be dropped rather than halved.
-	got := truncate(s)
-	if len(got) > maxKeyBytes {
-		t.Errorf("got %d bytes, want at most %d", len(got), maxKeyBytes)
-	}
-	if !utf8.ValidString(got) {
-		t.Errorf("got %q, want valid UTF-8", got)
 	}
 }
 

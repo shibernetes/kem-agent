@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -210,8 +209,8 @@ func (c *Cache) logObjectCounts(ctx context.Context) {
 // resource covers.
 func (c *Cache) warnUndeclared(ctx context.Context, gk schema.GroupKind) {
 	key := schema.GroupKind{
-		Group: truncate(gk.Group),
-		Kind:  truncate(gk.Kind),
+		Group: sanitizer.Truncate(gk.Group, maxKeyBytes),
+		Kind:  sanitizer.Truncate(gk.Kind, maxKeyBytes),
 	}
 	if suppressed, ok := c.undeclared.Admit(key); ok {
 		c.logger.LogAttrs(ctx, slog.LevelWarn, "event regards an undeclared resource",
@@ -227,7 +226,7 @@ func (c *Cache) warnUndeclared(ctx context.Context, gk schema.GroupKind) {
 func (c *Cache) warnCrossNamespace(ctx context.Context, ev, regarding string) {
 	key := namespacePair{
 		event:     ev,
-		regarding: truncate(regarding),
+		regarding: sanitizer.Truncate(regarding, maxKeyBytes),
 	}
 	if suppressed, ok := c.crossNS.Admit(key); ok {
 		c.logger.LogAttrs(ctx, slog.LevelWarn, "event regards an object in another namespace",
@@ -236,15 +235,4 @@ func (c *Cache) warnCrossNamespace(ctx context.Context, ev, regarding string) {
 			suppressed,
 		)
 	}
-}
-
-func truncate(s string) string {
-	if len(s) <= maxKeyBytes {
-		return s
-	}
-	limit := maxKeyBytes
-	for i := 0; i < utf8.UTFMax-1 && limit > 0 && !utf8.RuneStart(s[limit]); i++ {
-		limit--
-	}
-	return strings.Clone(s[:limit])
 }

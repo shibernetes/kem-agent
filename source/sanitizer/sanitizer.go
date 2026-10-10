@@ -43,16 +43,16 @@ func truncateValues(m map[string]string, limit int) {
 	}
 	for k, v := range m {
 		if len(v) > limit {
-			m[k] = truncate(v, limit)
+			m[k] = Truncate(v, limit)
 		}
 	}
 }
 
-// truncate returns a copy of s shortened to at most limit bytes,
+// Truncate returns a copy of s shortened to at most limit bytes,
 // or the original value when it already fits. The cut lands on a
 // rune boundary rather than through one, since a split rune would
 // hand invalid UTF-8 to every sink.
-func truncate(s string, limit int) string {
+func Truncate(s string, limit int) string {
 	if len(s) <= limit {
 		return s
 	}

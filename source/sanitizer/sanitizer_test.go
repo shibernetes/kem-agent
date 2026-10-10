@@ -24,7 +24,7 @@ func TestTruncate(t *testing.T) {
 		"a four-byte rune":     {in: strings.Repeat("𝄞", 8), n: 5, want: "𝄞"},
 	}
 	for name, tc := range cases {
-		got := truncate(tc.in, tc.n)
+		got := Truncate(tc.in, tc.n)
 
 		if got != tc.want {
 			t.Errorf("%s: got %q, want %q", name, got, tc.want)

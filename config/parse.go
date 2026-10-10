@@ -3,7 +3,6 @@ package config
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -73,15 +72,6 @@ type Warning struct {
 // or zeroes when it has no position.
 func (w Warning) Position() (int, int) {
 	return tokenPosition(w.Node)
-}
-
-// Load reads and parses the file at path.
-func Load(path string, factories sink.Factories) (*Result, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file %q: %w", path, err)
-	}
-	return Parse(data, factories)
 }
 
 // Parse parses a YAML config document. It expands ${VAR} references,

@@ -39,11 +39,11 @@ type fieldLimits struct{}
 
 // Sanitize implements the [EventSanitizer] interface.
 func (fieldLimits) Sanitize(ev *event.Event) {
-	ev.Action = truncate(ev.Action, eventMaxActionSize)
-	ev.Note = truncate(ev.Note, eventMaxNoteSize)
-	ev.Reason = truncate(ev.Reason, eventMaxReasonSize)
-	ev.ReportingController = truncate(ev.ReportingController, eventMaxReportingControllerSize)
-	ev.ReportingInstance = truncate(ev.ReportingInstance, eventMaxReportingInstanceSize)
+	ev.Action = Truncate(ev.Action, eventMaxActionSize)
+	ev.Note = Truncate(ev.Note, eventMaxNoteSize)
+	ev.Reason = Truncate(ev.Reason, eventMaxReasonSize)
+	ev.ReportingController = Truncate(ev.ReportingController, eventMaxReportingControllerSize)
+	ev.ReportingInstance = Truncate(ev.ReportingInstance, eventMaxReportingInstanceSize)
 
 	truncateRef(&ev.Regarding)
 	if ev.Related != nil {
@@ -55,11 +55,11 @@ func (fieldLimits) Sanitize(ev *event.Event) {
 // The reference names an object the event's creator chose, and no
 // upstream mechanism bounds that value.
 func truncateRef(ref *corev1.ObjectReference) {
-	ref.Kind = truncate(ref.Kind, eventMaxReferenceFieldSize)
-	ref.Namespace = truncate(ref.Namespace, eventMaxReferenceFieldSize)
-	ref.Name = truncate(ref.Name, eventMaxReferenceFieldSize)
-	ref.UID = types.UID(truncate(string(ref.UID), eventMaxReferenceFieldSize))
-	ref.APIVersion = truncate(ref.APIVersion, eventMaxReferenceFieldSize)
-	ref.ResourceVersion = truncate(ref.ResourceVersion, eventMaxReferenceFieldSize)
-	ref.FieldPath = truncate(ref.FieldPath, eventMaxReferenceFieldSize)
+	ref.Kind = Truncate(ref.Kind, eventMaxReferenceFieldSize)
+	ref.Namespace = Truncate(ref.Namespace, eventMaxReferenceFieldSize)
+	ref.Name = Truncate(ref.Name, eventMaxReferenceFieldSize)
+	ref.UID = types.UID(Truncate(string(ref.UID), eventMaxReferenceFieldSize))
+	ref.APIVersion = Truncate(ref.APIVersion, eventMaxReferenceFieldSize)
+	ref.ResourceVersion = Truncate(ref.ResourceVersion, eventMaxReferenceFieldSize)
+	ref.FieldPath = Truncate(ref.FieldPath, eventMaxReferenceFieldSize)
 }
