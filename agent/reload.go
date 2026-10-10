@@ -14,7 +14,8 @@ import (
 	"github.com/shibernetes/kem-agent/pipeline"
 )
 
-// watchConfigFile triggers a reload whenever the config file changes.
+// watchConfigFile triggers a reload whenever the config file
+// changes, and once when the watcher starts.
 func (a *Agent) watchConfigFile(ctx context.Context) error {
 	watcher, err := configwatcher.New(a.triggerReload, a.configPath)
 	if err != nil {
@@ -27,6 +28,11 @@ func (a *Agent) watchConfigFile(ctx context.Context) error {
 			)
 		}
 	}()
+	// The watcher only reports changes that occurs after it starts.
+	// This reload catches any change after the agent first read the
+	// file and before the watcher starts.
+	a.triggerReload()
+
 	return nil
 }
 
