@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/http/httpguts"
+
 	"github.com/shibernetes/kem-agent/config/diag"
 	"github.com/shibernetes/kem-agent/config/opaque"
 	"github.com/shibernetes/kem-agent/config/units"
@@ -326,6 +328,8 @@ func (a Auth) Validate() error {
 		return errors.New("basic and bearer are mutually exclusive")
 	case a.Basic != nil && a.Basic.Username == "":
 		return errors.New("basic username is required")
+	case !httpguts.ValidHeaderFieldValue(string(a.Bearer)):
+		return diag.Pathf("bearer", "bearer contains an invalid character")
 	}
 	return nil
 }

@@ -88,6 +88,7 @@ func TestConfigRejects(t *testing.T) {
 		"cloudevents wrong format":  func(c *Config) { c.CloudEvents = CloudEvents{Type: "io.k8s.event"} },
 		"basic and bearer auth":     func(c *Config) { c.Auth = Auth{Basic: &BasicAuth{Username: "agent"}, Bearer: "s3cr3t"} },
 		"basic without username":    func(c *Config) { c.Auth.Basic = &BasicAuth{Password: "s3cr3t"} },
+		"newline in bearer":         func(c *Config) { c.Auth.Bearer = "s3cr3t\n" },
 		"secret without identifier": func(c *Config) { c.Signature.Secret = testV1Signature().Secret },
 		"signing with compression":  func(c *Config) { c.Signature, c.Compression = testV1Signature(), compress.Gzip },
 		"reserved header":           func(c *Config) { c.Headers = map[string]opaque.String{headerCluster: "us-east"} },
