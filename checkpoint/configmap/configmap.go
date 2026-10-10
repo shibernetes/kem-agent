@@ -3,6 +3,7 @@ package configmap
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -26,6 +27,10 @@ const (
 const (
 	dataKey = "state.json"
 )
+
+// errNoNamespace is returned by Load when the store has no namespace,
+// which is the case outside a pod when the configuration sets none.
+var errNoNamespace = errors.New("the configmap namespace is unknown, set checkpoint.store.namespace or the POD_NAMESPACE environment variable")
 
 var _ checkpoint.Store = (*Store)(nil)
 
@@ -85,8 +90,12 @@ func New(client kubernetes.Interface, cfg Config) *Store {
 
 // Load reads and decodes the state. It returns [checkpoint.ErrNotFound]
 // when the ConfigMap does not exist, and [checkpoint.ErrCorrupt] when it
-// exists without holding a state.
+// exists without holding a state. It otherwise fails when the store has
+// no configured namespace.
 func (s *Store) Load(ctx context.Context) (checkpoint.State, error) {
+	if s.namespace == "" {
+		return checkpoint.State{}, errNoNamespace
+	}
 	obj, err := s.client.CoreV1().ConfigMaps(s.namespace).Get(ctx, s.name, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		return checkpoint.State{}, checkpoint.ErrNotFound

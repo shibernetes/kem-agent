@@ -125,6 +125,13 @@ func TestLoadFailsOnForbiddenRead(t *testing.T) {
 	}
 }
 
+func TestLoadRequiresNamespace(t *testing.T) {
+	_, err := New(fake.NewClientset(), Config{Name: storeName}).Load(context.Background())
+	if !errors.Is(err, errNoNamespace) {
+		t.Errorf("got error %v, want the namespace reported as unknown", err)
+	}
+}
+
 func TestSaveFailsOnForbiddenWrite(t *testing.T) {
 	client := fake.NewClientset(configMapWith(t, current()))
 	client.PrependReactor("update", "configmaps", forbidden())
