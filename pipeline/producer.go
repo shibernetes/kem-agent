@@ -31,6 +31,10 @@ const (
 	// dropTooLarge is the reason recorded when a frame was larger
 	// than the whole queue and could never have been held.
 	dropTooLarge = "too_large"
+
+	// dropEmptyFrame is the reason recorded when the encoder wrote
+	// nothing for an event. Such an event is counted as rejected.
+	dropEmptyFrame = "empty_frame"
 )
 
 // A Producer is the input side of a sink, resolved at wiring so that
@@ -111,6 +115,12 @@ func (p *batchProducer) Produce(buf []byte, ev *event.Event) []byte {
 	buf = buffer.Shrink(buf, bufSizeThreshold)
 	frame := p.encoder.AppendEvent(buf[:0], ev)
 
+	// An encoder that writes nothing leaves no frame to queue.
+	if len(frame) == 0 {
+		p.metrics.Rejected.Inc()
+		p.dropped(dropEmptyFrame, 0, 1)
+		return frame
+	}
 	// A frame the queue cannot hold is refused outright, where
 	// a full queue accepts it and gives up as many of its oldest
 	// frames as it needs.

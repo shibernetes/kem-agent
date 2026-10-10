@@ -84,6 +84,18 @@ func TestBatchProducerRecordsTooLarge(t *testing.T) {
 	}
 }
 
+func TestBatchProducerRejectsEmptyFrame(t *testing.T) {
+	d, r := newTestDrainer(t, newFakeBatchSink(), testConfig())
+
+	// The fake encoder writes an event's name, so an event
+	// with none encodes to an empty frame.
+	d.Producer().Produce(nil, testEvent(0))
+
+	if n := r.rejected.get(); n != 1 {
+		t.Errorf("got %v events rejected, want 1", n)
+	}
+}
+
 func TestBatchProducerRecordsOverflow(t *testing.T) {
 	d, r := newTestDrainer(t, newFakeBatchSink(), testConfig())
 	p := d.Producer()
