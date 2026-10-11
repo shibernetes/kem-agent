@@ -50,6 +50,7 @@ func TestParseRejectsConfig(t *testing.T) {
 		"watch no pipeline reads":    {fixture: "unconsumed-watch", want: `"team-b" is referenced by no pipeline`},
 		"narrowing every namespace":  {fixture: "narrowed-all-namespaces", want: "cannot be narrowed"},
 		"one metric on two sinks":    {fixture: "duplicate-metric", want: "already exposed by sink"},
+		"newline in cluster name":    {fixture: "bad-cluster-name", want: "cluster_name contains a control character"},
 		"pprof address with no port": {fixture: "pprof-addr", want: "pprof_server: invalid addr"},
 		"probes on the metrics port": {fixture: "port-conflict", want: `http_server: addr ":8080" uses the same port as metrics_server.addr ":8080"`},
 		"unselectable event field":   {fixture: "bad-field-selector", want: "not one of the selectable event fields"},

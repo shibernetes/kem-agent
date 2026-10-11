@@ -4,7 +4,9 @@ import (
 	"errors"
 	"net"
 	"strconv"
+	"strings"
 	"time"
+	"unicode"
 
 	"github.com/shibernetes/kem-agent/checkpoint"
 	"github.com/shibernetes/kem-agent/config/diag"
@@ -87,6 +89,10 @@ func DefaultServiceConfig() Service {
 
 // Validate validates the configuration.
 func (c Service) Validate() error {
+	// A control character in the cluster name header fails requests.
+	if strings.ContainsFunc(c.ClusterName, unicode.IsControl) {
+		return diag.Pathf("cluster_name", "cluster_name contains a control character")
+	}
 	if c.ShutdownTimeout <= checkpoint.FinalSaveReserve {
 		return diag.Pathf("shutdown_timeout",
 			"shutdown_timeout must be greater than %s, which is reserved for the final checkpoint write",

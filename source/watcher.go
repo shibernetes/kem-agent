@@ -169,7 +169,7 @@ func (w *namespaceWatcher) watchOnce(ctx context.Context) error {
 	err = w.read(ctx, stream)
 
 	// The stream ended before its replay completed, so the
-	// next stream restart replaying from the start.
+	// next stream restarts replaying from the start.
 	if w.replay.active && ctx.Err() == nil {
 		if suppressed, ok := w.interrupts.Admit(struct{}{}); ok {
 			w.logger.LogAttrs(ctx, slog.LevelWarn, "watch replay interrupted, starting over",
