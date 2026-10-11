@@ -42,15 +42,10 @@ func (a *Agent) stop() {
 	a.log.LogAttrs(ctx, slog.LevelInfo, "agent stopped")
 }
 
-// stopAndWaitWatches ends the watches and waits for them to return,
-// so nothing records a position while the final write reads them.
+// stopAndWaitWatches ends the watches and waits for them to return.
 func (a *Agent) stopAndWaitWatches() {
 	a.stopWatches()
 	<-a.sourceDone
-
-	// The checkpointer is the sole writer of the state, so
-	// it has to return before the final write runs.
-	a.checkpointer.Wait()
 }
 
 // drainSinks flushes what every sink still holds, all of them at once
@@ -84,7 +79,22 @@ func (a *Agent) saveCheckpoint(reserve time.Duration) {
 	ctx, cancel := context.WithTimeout(context.Background(), reserve)
 	defer cancel()
 
-	a.checkpointer.Write(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		// The checkpointer is the sole writer of the state,
+		// so it has to return before the final write.
+		a.checkpointer.Wait()
+		a.checkpointer.Write(ctx)
+	}()
+	// A save to a file store cannot be interrupted by the context,
+	// so on a stalled volume it would block.
+	select {
+	case <-done:
+	case <-ctx.Done():
+		a.log.LogAttrs(ctx, slog.LevelError, "final checkpoint save timed out")
+	}
 }
 
 // releaseComponents releases the sinks and the fan-outs, using

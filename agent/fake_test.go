@@ -74,6 +74,7 @@ func (*fakeBatchSink) Fixed() int {
 // fakeStore records every save in a call log.
 type fakeStore struct {
 	calls *callLog
+	block chan struct{}
 }
 
 func (*fakeStore) Load(context.Context) (checkpoint.State, error) {
@@ -82,5 +83,8 @@ func (*fakeStore) Load(context.Context) (checkpoint.State, error) {
 
 func (s *fakeStore) Save(context.Context, checkpoint.State) error {
 	s.calls.add("save")
+	if s.block != nil {
+		<-s.block
+	}
 	return nil
 }
