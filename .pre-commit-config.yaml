@@ -21,16 +21,26 @@ repos:
 
   - repo: local
     hooks:
-      # Regenerates the config schema from the Go config types. A commit whose
-      # schema is stale fails once and goes through when the regenerated file is
-      # staged with it. The hook stages nothing itself, since a file it staged
-      # would count as unmodified and CI would pass on a stale schema.
+      # Regenerates the config schema from the Go config types. A commit with a
+      # stale schema fails, and passes once the regenerated file is staged. The
+      # hook doesn't run `git add` itself, because CI would then see no change
+      # and pass.
       - id: config-schema
         name: "Regenerate the config JSON schema"
         entry: go generate ./...
         language: system
         pass_filenames: false
         files: \.go$
+
+      # Fails when `go mod tidy` would change go.mod or go.sum, and prints the
+      # diff. CI runs the same check, so this catches an untidy module before a
+      # push. Run `go mod tidy` to fix it.
+      - id: go-mod-tidy
+        name: "Check that the Go module is tidy"
+        entry: go mod tidy -diff
+        language: system
+        pass_filenames: false
+        files: \.go$|^go\.(mod|sum)$
 
   - repo: https://github.com/norwoodj/helm-docs
     rev: v1.14.2

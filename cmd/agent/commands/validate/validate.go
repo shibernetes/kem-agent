@@ -11,7 +11,7 @@ import (
 	"github.com/shibernetes/kem-agent/cmd/internal/sinks"
 )
 
-// ErrInvalidConfig signals aqn invalid configuration.
+// ErrInvalidConfig signals an invalid configuration.
 var ErrInvalidConfig = errors.New("invalid configuration")
 
 // NewCommand builds the config validation subcommand.
