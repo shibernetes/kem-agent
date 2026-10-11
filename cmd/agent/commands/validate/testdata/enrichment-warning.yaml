@@ -1,0 +1,16 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  console:
+    type: stdout
+pipelines:
+  owned:
+    filters:
+      - "has(event.regardingObject)"
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

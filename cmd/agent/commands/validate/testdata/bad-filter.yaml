@@ -1,0 +1,16 @@
+source:
+  watches:
+    - namespace: team-a
+sinks:
+  console:
+    type: stdout
+pipelines:
+  archive:
+    filters:
+      - "event.foo == 'Warning'"
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint

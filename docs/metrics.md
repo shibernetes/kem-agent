@@ -36,7 +36,7 @@ Each drop reason belongs to one stage of `kem_agent_events_dropped_total`.
 | `queue` | `too_large` | One event was larger than the sink's whole queue, as set by `queue.max_bytes`. |
 | `delivery` | `retry_exhausted` | A batch kept failing until `retry.timeout` ran out, or until the agent stopped. With `retry.enabled` set to `false`, the first failure drops it. |
 | `delivery` | `permanent_error` | The destination refused a batch for a reason that retrying can't fix, or because the batch was too large for it. |
-| `sink` | `rejected` | The destination accepted the request and refused some of its records, or a `metrics` sink refused a new series over its `max_series` limit. |
+| `sink` | `rejected` | The destination accepted the request and refused some of its records, or a `metrics` sink refused a new series over its `max_series` limit. It also applies when a `webhook` sink's `template` renders nothing for an event. |
 
 ## Enrichment results
 

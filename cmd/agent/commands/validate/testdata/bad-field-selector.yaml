@@ -1,0 +1,15 @@
+source:
+  watches:
+    - namespace: team-a
+      field_selector: involvedObject.kind=Pod
+sinks:
+  console:
+    type: stdout
+pipelines:
+  archive:
+    sinks:
+      - console
+checkpoint:
+  store:
+    type: configmap
+    name: kem-agent-checkpoint
