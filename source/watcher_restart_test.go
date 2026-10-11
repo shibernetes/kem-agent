@@ -141,6 +141,29 @@ func TestWatcherLogsReconnect(t *testing.T) {
 	}
 }
 
+// TestWatcherWarnsOnInterruptedReplay asserts that a stream ending before
+// its replay completes is logged as a warning.
+func TestWatcherWarnsOnInterruptedReplay(t *testing.T) {
+	var (
+		r  = &logRecorder{}
+		fw = newFakeWatch().withFrames(func(s *watch.FakeWatcher) {
+			s.Add(watchedEvent("1042"))
+		})
+		w = newTestWatcher(t, watcherOptions{
+			client: fw.clientset(),
+			config: WatchConfig{Namespace: testNamespace},
+			logger: r.logger(),
+		})
+	)
+	if err := w.watchOnce(t.Context()); err != nil {
+		t.Fatalf("the stream ended with an error: %v", err)
+	}
+	want := []string{"watch replay interrupted, starting over"}
+	if got := r.messages(); !slices.Equal(got, want) {
+		t.Errorf("got %v, want %v", got, want)
+	}
+}
+
 // TestWatcherRunBackoff asserts that a failing watch reconnects with
 // an exponential backoff. The backoff delay is jittered, so each wait
 // duration falls in a range rather than on an exact value.

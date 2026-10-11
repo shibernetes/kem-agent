@@ -61,6 +61,7 @@ type namespaceWatcher struct {
 	metrics    watchMetrics
 	logger     *slog.Logger
 	failures   *logsample.Gate[metav1.StatusReason]
+	interrupts *logsample.Gate[struct{}]
 	mu         sync.Mutex
 	pos        string
 	recovering bool
@@ -94,6 +95,7 @@ func newWatcher(opts watcherOptions) *namespaceWatcher {
 		metrics:    opts.metrics,
 		logger:     opts.logger,
 		failures:   logsample.PerInterval[metav1.StatusReason](watchFailureInterval, watchFailureThreshold),
+		interrupts: logsample.PerInterval[struct{}](watchFailureInterval, watchFailureThreshold),
 		pos:        opts.resume,
 	}
 	if opts.resume == "" {
@@ -164,7 +166,20 @@ func (w *namespaceWatcher) watchOnce(ctx context.Context) error {
 		)
 		w.recovering = false
 	}
-	return w.read(ctx, stream)
+	err = w.read(ctx, stream)
+
+	// The stream ended before its replay completed, so the
+	// next stream restart replaying from the start.
+	if w.replay.active && ctx.Err() == nil {
+		if suppressed, ok := w.interrupts.Admit(struct{}{}); ok {
+			w.logger.LogAttrs(ctx, slog.LevelWarn, "watch replay interrupted, starting over",
+				slog.String("namespace", w.name),
+				slog.Int("replayed", w.replay.kept),
+				suppressed,
+			)
+		}
+	}
+	return err
 }
 
 // open starts a watch from the position it last read or from the
