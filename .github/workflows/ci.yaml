@@ -92,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # renovate: datasource=github-releases depName=j178/prek extractVersion=^v(?<version>.+)$
-      PREK_CLI_VERSION: 0.5.2
+      PREK_CLI_VERSION: 0.5.5
       # Skips the gitleaks hook, because the Secrets job scans the whole history.
       SKIP: gitleaks
     steps:
