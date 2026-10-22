@@ -2,7 +2,7 @@ module github.com/shibernetes/kem-agent
 
 go 1.27.0
 
-toolchain go1.27.1
+toolchain go1.27.3
 
 require (
 	charm.land/lipgloss/v2 v2.0.6
