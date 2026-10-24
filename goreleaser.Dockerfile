@@ -7,7 +7,7 @@
 #
 # Nothing is compiled here, so this file cannot build from the repository root.
 # To build an image from source, use the Dockerfile beside it.
-FROM gcr.io/distroless/static:nonroot@sha256:1c2c046bc09ed40fad370b599a0b1ae7987f55b01e247cf27a7c27cd97e5bbc7
+FROM gcr.io/distroless/static:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99
 
 ARG TARGETPLATFORM
 
