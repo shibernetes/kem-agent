@@ -114,7 +114,7 @@ jobs:
       # same checks that run on a local commit. A hook that modifies a file
       # fails the job, which is how the CI catches a stale config schema.
       - name: Run hooks
-        uses: j178/prek-action@4e14d07f9231acabce116ccfca13b13dd9755ece # v3.0.0
+        uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
         with:
           prek-version: ${{ env.PREK_CLI_VERSION }}
 
