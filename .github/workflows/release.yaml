@@ -47,7 +47,7 @@ jobs:
       id-token: write # Lets cosign sign keylessly with this workflow's OIDC token
     env:
       # renovate: datasource=github-releases depName=goreleaser/goreleaser
-      GORELEASER_VERSION: v2.18.1
+      GORELEASER_VERSION: v2.19.0
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
