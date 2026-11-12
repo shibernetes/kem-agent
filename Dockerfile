@@ -30,7 +30,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
 -X github.com/shibernetes/kem-agent/internal/version.date=${BUILD_DATE}" \
     -o /out/agent ./cmd/agent
 
-FROM gcr.io/distroless/static:nonroot@sha256:1c2c046bc09ed40fad370b599a0b1ae7987f55b01e247cf27a7c27cd97e5bbc7
+FROM gcr.io/distroless/static:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
 
 # Defaulted here, unlike in the build stage, so the labels match what the
 # binary reports when no build argument is passed.
