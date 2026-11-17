@@ -1,6 +1,6 @@
 # Build the static agent binary, cross-compiling to the target platform so a
 # multi-arch build under buildx runs the Go toolchain natively.
-FROM --platform=${BUILDPLATFORM} golang:1.27.1@sha256:f44f6e88636cfb311f9ebace870ded69d943f227bb3cb27d32ffd84ea18c43ea AS build
+FROM --platform=${BUILDPLATFORM} golang:1.27.4@sha256:205c7636d74e0ffbe3d007162df7d74f859f5a8c8322dfb9f907977686c126cf AS build
 
 WORKDIR /src
 
